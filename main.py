@@ -7,25 +7,38 @@ import time
 
 # === TELEGRAM ===
 TOKEN = "7929662766:AAEnL_VsaMi_iBCqRd4CZGnFBe3HST-J1jI"
-CHAT_ID = "1392975690"
+CHAT_IDS = [
+    "1392975690",   # aku kamu
+    "5841838343",   # akun teman
+]
 
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message}
-    try:
-        requests.post(url, data=payload)
-    except Exception as e:
-        print("Telegram error:", e)
+    for chat_id in CHAT_IDS:
+        payload = {"chat_id": chat_id, "text": message}
+        try:
+            requests.post(url, data=payload)
+        except Exception as e:
+            print(f"Telegram error to {chat_id}:", e)
+
 
 # === LIST PAIR & FILTER MINIMAL QTY ===
-watchlist = ["BTCUSDT", "XRPUSDT", "DOGEUSDT"]
+watchlist = [
+    "XRPUSDT", "DOGEUSDT", "PEPEUSDT",
+    "SHIBUSDT", "1000PEPEUSDT", "WIFUSDT",
+    "ARBUSDT", "LINKUSDT", "RNDRUSDT"
+]
+
 MIN_QTY = {
-    "BTCUSDT": 0.3,
-    "ETHUSDT": 3,
     "XRPUSDT": 100,
     "DOGEUSDT": 300,
-    "SOLUSDT": 20,
-    "1000SATSUSDT": 50000
+    "PEPEUSDT": 5000000,
+    "SHIBUSDT": 1000000,
+    "1000PEPEUSDT": 5000,
+    "WIFUSDT": 100,
+    "ARBUSDT": 10,
+    "LINKUSDT": 2,
+    "RNDRUSDT": 5
 }
 
 # === COMBINE STREAM URL ===
