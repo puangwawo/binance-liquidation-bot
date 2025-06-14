@@ -13,9 +13,7 @@ def send_telegram_message(message):
         payload = {"chat_id": chat_id, "text": message}
         try:
             response = requests.post(url, data=payload)
-            print(f"Sent to {chat_id}: {response.text}")
+            print(f"[{chat_id}] Status: {response.status_code}")
+            print(response.text)
         except Exception as e:
             print(f"Telegram error to {chat_id}:", e)
-
-# ✅ TEST KIRIM PESAN
-send_telegram_message("✅ Bot test sukses! Ini pesan dari Replit/main.py")
