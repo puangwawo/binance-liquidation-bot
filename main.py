@@ -96,3 +96,5 @@ def run_websocket():
 # === JALANKAN DI THREAD TERPISAH ===
 thread = threading.Thread(target=run_websocket)
 thread.start()
+
+send_telegram_message("✅ Bot is working! Test message from Replit.")
