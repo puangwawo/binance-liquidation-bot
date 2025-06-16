@@ -1,5 +1,3 @@
-2xzqK08Wojr5KrGecPGzdUJCVU1_5smAJsisnyiiFfWf9t229
-
 # === SETUP ===
 import json
 import requests
@@ -23,6 +21,20 @@ def send_telegram_message(message):
         except Exception as e:
             print(f"Telegram error to {chat_id}:", e)
 
+# === N8N WEBHOOK ===
+def send_to_n8n(symbol, side, qty, price):
+    webhook_url = "https://crop-recognized-aspect-turkey.trycloudflare.com/webhook-test/liquidation-alert"
+    payload = {
+        "symbol": symbol,
+        "side": side,
+        "qty": qty,
+        "price": price
+    }
+    try:
+        response = requests.post(webhook_url, json=payload)
+        print(f"✅ Dikirim ke N8N: {response.status_code}, {response.text}")
+    except Exception as e:
+        print("❌ Gagal kirim ke N8N:", e)
 
 # === LIST PAIR & FILTER MINIMAL QTY ===
 watchlist = [
@@ -71,7 +83,10 @@ def on_message(ws, message):
                     f"Price: {price:,.4f}"
                 )
                 print(text)
-                send_telegram_message(text)
+
+                # Kirim ke n8n, bukan Telegram langsung
+                send_to_n8n(symbol, side, qty, price)
+
     except Exception as e:
         print("Parsing error:", e)
 
@@ -86,7 +101,7 @@ def on_close(ws, close_status_code, close_msg):
 def on_error(ws, error):
     print("WebSocket error:", error)
 
-# === RUNNING FUNCTION ===
+# === JALANKAN ===
 def run_websocket():
     ws = websocket.WebSocketApp(ws_url,
                                  on_open=on_open,
@@ -95,6 +110,5 @@ def run_websocket():
                                  on_message=on_message)
     ws.run_forever()
 
-# === JALANKAN DI THREAD TERPISAH ===
 thread = threading.Thread(target=run_websocket)
 thread.start()
