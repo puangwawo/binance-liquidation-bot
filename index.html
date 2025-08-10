@@ -2,267 +2,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XRP Liquidation Bot Dashboard – GitHub Pages</title>
+  <title>XRP Signals — OBI • VWAP • Volume • Sweep • Funding/OI</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color:#333; }
-    .container{ max-width:1400px; margin:0 auto; padding:20px; }
-    .header{ text-align:center; margin-bottom:30px; color:white; }
-    .header h1{ font-size:2.2rem; margin-bottom:8px; text-shadow:2px 2px 4px rgba(0,0,0,.3); }
-    .header p{ opacity:.9; }
-    .stats-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:20px; margin-bottom:30px; }
-    .stat-card{ background:white; padding:22px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,.1); text-align:center; transition:transform .3s, box-shadow .3s; }
-    .stat-card:hover{ transform:translateY(-4px); box-shadow:0 15px 40px rgba(0,0,0,.15); }
-    .stat-value{ font-size:2.1rem; font-weight:700; color:#667eea; margin-bottom:8px; }
-    .stat-label{ color:#666; text-transform:uppercase; letter-spacing:1px; font-size:.95rem; }
-    .price-source { font-size:.8rem; color:#888; margin-top:6px; }
-    .main-content{ display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-bottom:30px; }
-    .card{ background:white; border-radius:15px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.1); }
-    .card h2{ color:#333; margin-bottom:16px; font-size:1.3rem; border-bottom:3px solid #667eea; padding-bottom:8px; }
-    .signal-item{ background:#f8f9fa; border-radius:10px; padding:15px; margin-bottom:15px; border-left:4px solid #667eea; transition:all .3s; }
-    .signal-item:hover{ background:#e9ecef; transform:translateX(5px); }
-    .signal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-    .signal-action{ padding:5px 15px; border-radius:20px; font-weight:700; font-size:.9rem; }
-    .signal-action.BUY{ background:#28a745; color:#fff; }
-    .signal-action.SELL{ background:#dc3545; color:#fff; }
-    .signal-action.HOLD{ background:#ffc107; color:#333; }
-    .confidence-bar{ width:100%; height:8px; background:#e9ecef; border-radius:4px; overflow:hidden; margin:10px 0; }
-    .confidence-fill{ height:100%; background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%); transition: width .3s; }
-    .controls{ text-align:center; margin-bottom:30px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
-    .btn{ background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; border:none; padding:12px 22px; border-radius:25px; font-size:1rem; cursor:pointer; transition:all .3s; }
-    .btn:hover{ transform:translateY(-2px); box-shadow:0 10px 20px rgba(0,0,0,.2); }
-    .btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
-    .chart-container{ position:relative; height:300px; margin-top:10px; }
-    @media (max-width: 768px){ .main-content{ grid-template-columns:1fr; } .header h1{ font-size:1.8rem; } .stats-grid{ grid-template-columns:1fr; } }
-    .risk-indicator{ display:inline-block; padding:3px 8px; border-radius:12px; font-size:.8rem; font-weight:700; margin-left:10px; }
-    .risk-LOW{ background:#d4edda; color:#155724; }
-    .risk-MEDIUM{ background:#fff3cd; color:#856404; }
-    .risk-HIGH{ background:#f8d7da; color:#721c24; }
-    .blink{ animation:blink 1s steps(2,start) 4; } @keyframes blink{ to { visibility:hidden; } }
-    .footer{ text-align:center; color:white; opacity:.85; margin:18px 0 6px; font-size:.9rem; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);min-height:100vh;color:#0f172a}
+    .container{max-width:1300px;margin:0 auto;padding:18px}
+    .header{color:#fff;text-align:center;margin-bottom:14px}
+    .header h1{font-size:2rem;margin-bottom:6px;text-shadow:0 2px 12px rgba(0,0,0,.25)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .card{background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.08);padding:16px}
+    .card h2{font-size:1.05rem;margin-bottom:10px;border-bottom:3px solid #0ea5e9;display:inline-block;padding-bottom:4px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:600}
+    .ok{background:#dcfce7;color:#14532d}
+    .bad{background:#fee2e2;color:#7f1d1d}
+    .mono{font-family:ui-monospace,Menlo,monospace;background:#f8fafc;border-radius:10px;padding:10px}
+    .input,.select{padding:10px;border:1px solid #e2e8f0;border-radius:10px}
+    .btn{background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .chart-box{position:relative;height:240px}
+    .gauge{height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .gauge > div{height:100%;background:linear-gradient(90deg,#22c55e,#ef4444);width:50%}
+    ul{margin-left:18px}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 XRP Liquidation Bot Dashboard</h1>
-      <p>Pure Frontend (GitHub Pages Ready) — Live Price + Local Signals</p>
+      <h1>🔎 XRP Signal Board</h1>
+      <div>Order Book Imbalance • VWAP • Volume Spike • Liquidity Sweep • Funding & OI</div>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="currentPrice">$0.00</div>
-        <div class="stat-label">XRP Price (USDT)</div>
-        <div class="price-source" id="priceSource">Source: —</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalLiquidations">0</div>
-        <div class="stat-label">Total Liquidations</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalSignals">0</div>
-        <div class="stat-label">Trading Signals</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="avgConfidence">0%</div>
-        <div class="stat-label">Avg Confidence</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalVolume">$0</div>
-        <div class="stat-label">Total Volume</div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button class="btn" onclick="refreshAll()">🔄 Refresh</button>
-      <button class="btn" onclick="simulateNew()">⚡ Generate New Signals</button>
-      <button class="btn" onclick="clearData()">🧹 Clear</button>
-    </div>
-
-    <div class="main-content">
+    <div class="grid">
       <div class="card">
-        <h2>📊 Signal Distribution</h2>
-        <div class="chart-container">
-          <canvas id="signalChart"></canvas>
+        <h2>Live & Order Book</h2>
+        <div class="row" style="margin-bottom:8px">
+          <div>Price: <b id="price">$0.0000</b> <small id="priceSource" style="color:#64748b">Source: —</small></div>
+          <div>OBI: <b id="obiVal">—</b> <small id="obiSide" class="pill">—</small></div>
+        </div>
+        <div class="gauge"><div id="obiGauge" style="width:50%"></div></div>
+        <div class="row" style="margin-top:10px">
+          <label>Depth levels <input id="depth" class="input" type="number" value="10" min="5" max="50" step="5" style="width:90px"/></label>
+          <button class="btn" onclick="refreshOrderBook()">🔄 Refresh OB</button>
+        </div>
+        <div class="row" style="gap:20px;margin-top:10px">
+          <div>Bids (sum): <b id="sumBids">—</b></div>
+          <div>Asks (sum): <b id="sumAsks">—</b></div>
         </div>
       </div>
 
       <div class="card">
-        <h2>🎯 Latest Trading Signals</h2>
-        <div id="signalsList">
-          <p style="text-align: center; color: #666; margin: 50px 0;">No signals yet. Click "Generate New Signals".</p>
+        <h2>Futures Funding & OI</h2>
+        <div class="row" style="gap:20px">
+          <div>Funding Rate: <span id="funding" class="pill">—</span></div>
+          <div>Open Interest: <b id="oi">—</b> XRP</div>
         </div>
+        <div style="margin-top:10px;color:#64748b">*Snapshot dari Binance Futures; update tiap 60 detik.</div>
       </div>
     </div>
 
-    <div class="footer">
-      Frontend only. Price from Binance (fallback CoinGecko). Signals simulated client-side & saved in your browser.
+    <div class="grid" style="margin-top:14px">
+      <div class="card">
+        <h2>TF-5m — Close & VWAP</h2>
+        <div class="chart-box"><canvas id="chart5m"></canvas></div>
+        <div class="row" style="gap:16px;margin-top:8px">
+          <div>VWAP: <b id="vwap">—</b></div>
+          <div>Dist to VWAP: <b id="distVWAP">—</b></div>
+          <div>Volume Spike(1m vs 20m avg): <span id="volSpike" class="pill">—</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Signals</h2>
+        <div class="row" style="gap:10px;margin-bottom:8px">
+          <button class="btn" onclick="scanSignals()">🔍 Scan Now</button>
+          <select id="sens" class="select">
+            <option value="normal" selected>Sensitivity: Normal</option>
+            <option value="high">High (lebih agresif)</option>
+            <option value="low">Low (lebih konservatif)</option>
+          </select>
+        </div>
+        <div id="signals" class="mono" style="max-height:300px;overflow:auto">[]</div>
+        <div style="margin-top:8px;color:#64748b">Sinyal bersifat informatif — tidak otomatis entry.</div>
+      </div>
     </div>
   </div>
 
-  <script>
-    let signalChart = null;
-    const LS_KEY = "xrp_signals_v1";
+<script>
+let lastPrice=3.0, priceSource='—';
+let kl1=[], kl5=[], chart5=null;
+let signalFeed=[];
 
-    function getSignals() {
-      try {
-        return JSON.parse(localStorage.getItem(LS_KEY)) || [];
-      } catch (_) {
-        return [];
-      }
-    }
-    function setSignals(arr) {
-      localStorage.setItem(LS_KEY, JSON.stringify(arr));
-    }
-    function clearData() {
-      localStorage.removeItem(LS_KEY);
-      updateSignals([]);
-      updateChart([]);
-      updateStats([]);
-    }
+function addSignal(type, side, strength, details){
+  signalFeed.push({ts:new Date().toISOString(), type, side, strength, details});
+  const el=document.getElementById('signals');
+  el.textContent = JSON.stringify(signalFeed.slice(-60), null, 2);
+}
 
-    async function fetchLivePrice() {
-      // Binance first
-      try {
-        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT", { cache: "no-store" });
-        if (!r.ok) throw new Error("Binance not OK");
-        const j = await r.json();
-        const p = parseFloat(j.price);
-        if (isFinite(p) && p > 0) return { price: p, source: "Binance" };
-        throw new Error("Invalid Binance response");
-      } catch (e) {
-        // CoinGecko fallback
-        try {
-          const r2 = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd", { cache: "no-store" });
-          if (!r2.ok) throw new Error("CoinGecko not OK");
-          const j2 = await r2.json();
-          const p2 = parseFloat(j2?.ripple?.usd);
-          if (isFinite(p2) && p2 > 0) return { price: p2, source: "CoinGecko" };
-          throw new Error("Invalid CoinGecko response");
-        } catch (e2) {
-          return { price: 3.00, source: "Fallback 3.00" };
-        }
-      }
+// -------- Live Price ----------
+async function fetchLivePrice(){
+  try{
+    const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT",{cache:"no-store"});
+    if(!r.ok) throw new Error("binance");
+    const j = await r.json();
+    return { price: parseFloat(j.price), source:"Binance" };
+  }catch(e){
+    try{
+      const r2 = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",{cache:"no-store"});
+      if(!r2.ok) throw new Error("cg");
+      const j2=await r2.json();
+      return { price: parseFloat(j2?.ripple?.usd), source:"CoinGecko" };
+    }catch(e2){
+      return { price: lastPrice||3.0, source:"Fallback" };
     }
+  }
+}
+async function updatePrice(){
+  const res = await fetchLivePrice();
+  lastPrice = res.price; priceSource=res.source;
+  document.getElementById('price').textContent = '$'+(Math.round(lastPrice*10000)/10000).toLocaleString();
+  document.getElementById('priceSource').textContent = 'Source: '+priceSource;
+}
 
-    async function updatePriceCard() {
-      const { price, source } = await fetchLivePrice();
-      const el = document.getElementById('currentPrice');
-      const src = document.getElementById('priceSource');
-      el.textContent = '$' + (Math.round(price * 10000) / 10000).toLocaleString();
-      src.textContent = 'Source: ' + source;
-      el.classList.add('blink');
-      setTimeout(() => el.classList.remove('blink'), 800);
-      return price;
+// -------- Klines ----------
+async function fetchKlines(symbol, interval, limit){
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const r = await fetch(url,{cache:'no-store'}); const j = await r.json();
+  return j.map(x=>({t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
+}
+function sma(arr, n, accessor){ const out=[]; let sum=0;
+  for(let i=0;i<arr.length;i++){ const v=accessor(arr[i]); sum+=v; if(i>=n) sum-=accessor(arr[i-n]); out.push(i>=n-1?sum/n:null);} return out; }
+
+function computeVWAP(kl){
+  let pv=0, vol=0, vwapArr=[];
+  for(const k of kl){
+    const tp = (k.h+k.l+k.c)/3;
+    pv += tp * k.v; vol += k.v;
+    vwapArr.push(vol>0 ? pv/vol : null);
+  }
+  return vwapArr;
+}
+
+function draw5m(){
+  const ctx=document.getElementById('chart5m').getContext('2d');
+  const labels=kl5.map(k=>new Date(k.t).toLocaleTimeString());
+  const close=kl5.map(k=>k.c);
+  const vwap=computeVWAP(kl5);
+  const vwapVal = vwap[vwap.length-1];
+  document.getElementById('vwap').textContent = vwapVal ? vwapVal.toFixed(4) : '—';
+  const dist = vwapVal ? ((lastPrice-vwapVal)/vwapVal*100) : 0;
+  document.getElementById('distVWAP').textContent = vwapVal ? (dist>0?'+':'')+dist.toFixed(2)+'%' : '—';
+
+  if(chart5) chart5.destroy();
+  chart5 = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Close', data:close, fill:false, borderWidth:2},
+      {label:'VWAP', data:vwap, fill:false, borderWidth:2}
+    ]},
+    options:{plugins:{legend:{position:'bottom'}},responsive:true,maintainAspectRatio:false}
+  });
+}
+
+// -------- Volume Spike ----------
+function volumeSpike(){
+  if(kl1.length<25) return {spike:false, ratio:1};
+  const last=kl1[kl1.length-1].v;
+  const prev=kl1.slice(-21,-1).map(k=>k.v);
+  const avg = prev.reduce((a,b)=>a+b,0)/prev.length;
+  const ratio = avg>0 ? last/avg : 1;
+  const spike = ratio>=1.5;
+  document.getElementById('volSpike').textContent = spike ? `Spike ${ratio.toFixed(2)}x` : '—';
+  document.getElementById('volSpike').className = 'pill ' + (spike?'ok':'');
+  return {spike, ratio};
+}
+
+// -------- Liquidity Sweep (wick) ----------
+function detectSweep(){
+  if(kl5.length<20) return null;
+  const window = kl5.slice(-18);
+  const rangeHigh = Math.max(...window.map(k=>k.h));
+  const rangeLow  = Math.min(...window.map(k=>k.l));
+  const last = kl5[kl5.length-1];
+  const upBreak = last.h > rangeHigh*1.0015 && last.c < rangeHigh;
+  const downBreak= last.l < rangeLow*0.9985 && last.c > rangeLow;
+  if(upBreak) return {side:'DOWN', details:`Up-sweep at ${last.h.toFixed(4)} → close back ${last.c.toFixed(4)}`};
+  if(downBreak) return {side:'UP', details:`Down-sweep at ${last.l.toFixed(4)} → close back ${last.c.toFixed(4)}`};
+  return null;
+}
+
+// -------- Order Book Imbalance ----------
+async function refreshOrderBook(){
+  const depth = Math.max(5, Math.min(50, parseInt(document.getElementById('depth').value)||10));
+  const url = `https://api.binance.com/api/v3/depth?symbol=XRPUSDT&limit=${depth}`;
+  try{
+    const r = await fetch(url,{cache:'no-store'}); const j = await r.json();
+    const sum = (arr)=> arr.reduce((a,[p,q])=> a + parseFloat(q), 0);
+    const bids = sum(j.bids||[]), asks = sum(j.asks||[]);
+    const total = bids+asks;
+    const obi = total>0 ? (bids/total*100) : 50;
+    document.getElementById('sumBids').textContent = bids.toFixed(0);
+    document.getElementById('sumAsks').textContent = asks.toFixed(0);
+    document.getElementById('obiVal').textContent = obi.toFixed(1) + '% bids';
+    const side = obi>55 ? 'BUY-Bias' : obi<45 ? 'SELL-Bias' : 'Balanced';
+    const pill = document.getElementById('obiSide');
+    pill.textContent = side;
+    pill.className = 'pill ' + (side==='BUY-Bias'?'ok':side==='SELL-Bias'?'bad':'');
+    document.getElementById('obiGauge').style.width = Math.max(5, Math.min(95, Math.round(obi))) + '%';
+    return {obi, side, bids, asks};
+  }catch(e){
+    document.getElementById('obiVal').textContent = '—';
+    return {obi:50, side:'—', bids:0, asks:0};
+  }
+}
+
+// -------- Funding & OI ----------
+async function refreshFundingOI(){
+  try{
+    const fr = await fetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=XRPUSDT&limit=1',{cache:'no-store'});
+    const jf = await fr.json();
+    const rate = jf && jf[0] ? parseFloat(jf[0].fundingRate) : null;
+    document.getElementById('funding').textContent = rate!=null ? (rate*100).toFixed(4)+'%' : '—';
+    document.getElementById('funding').className = 'pill ' + (rate>0?'ok':'bad');
+  }catch(e){
+    document.getElementById('funding').textContent = '—';
+  }
+  try{
+    const oi = await fetch('https://fapi.binance.com/fapi/v1/openInterest?symbol=XRPUSDT',{cache:'no-store'});
+    const jo = await oi.json();
+    const oiVal = jo && jo.openInterest ? parseFloat(jo.openInterest) : null;
+    document.getElementById('oi').textContent = oiVal!=null ? oiVal.toLocaleString(undefined,{maximumFractionDigits:0}) : '—';
+  }catch(e){
+    document.getElementById('oi').textContent = '—';
+  }
+}
+
+// -------- Scanner ----------
+async function scanSignals(){
+  await updatePrice();
+  kl1 = await fetchKlines('XRPUSDT','1m',120);
+  kl5 = await fetchKlines('XRPUSDT','5m',120);
+  draw5m();
+  const obiRes = await refreshOrderBook();
+  await refreshFundingOI();
+
+  const sens = document.getElementById('sens').value;
+
+  if(obiRes.obi>=65){
+    addSignal('OrderBookImbalance','UP','strong',`OBI=${obiRes.obi.toFixed(1)}% bids`);
+  }else if(obiRes.obi<=35){
+    addSignal('OrderBookImbalance','DOWN','strong',`OBI=${(100-obiRes.obi).toFixed(1)}% asks`);
+  }else if(sens==='high' && (obiRes.obi>=60 || obiRes.obi<=40)){
+    addSignal('OrderBookImbalance','—','medium',`OBI bias ${obiRes.obi.toFixed(1)}%`);
+  }
+
+  const vs = volumeSpike();
+  if(vs.spike){
+    const dir = kl1[kl1.length-1].c > kl1[kl1.length-2].c ? 'UP' : 'DOWN';
+    addSignal('VolumeSpike', dir, vs.ratio>2?'strong':'medium', `${vs.ratio.toFixed(2)}x avg`);
+  }
+
+  const vwap=computeVWAP(kl5); const v = vwap[vwap.length-1];
+  if(v){
+    const dist = (lastPrice-v)/v*100;
+    const th = sens==='high' ? 0.15 : sens==='low' ? 0.35 : 0.25;
+    if(Math.abs(dist)>=th){
+      addSignal('VWAP-Distance', dist>0?'UP':'DOWN', Math.abs(dist)>=th*2?'strong':'medium', `${dist>0?'+':''}${dist.toFixed(2)}%`);
     }
+  }
 
-    function updateStats(signals) {
-      const total = signals.length;
-      const totalVol = signals.reduce((acc, s) => acc + (parseFloat(s.liquidation_data.o.q) * parseFloat(s.liquidation_data.o.p)), 0);
-      const avgConf = total ? (signals.reduce((a, s) => a + (s.confidence || 0), 0) / total) : 0;
-      document.getElementById('totalLiquidations').textContent = total.toString();
-      document.getElementById('totalSignals').textContent = total.toString();
-      document.getElementById('avgConfidence').textContent = Math.round(avgConf) + '%';
-      document.getElementById('totalVolume').textContent = '$' + Math.round(totalVol).toLocaleString();
-    }
+  const sw = detectSweep();
+  if(sw){
+    addSignal('LiquiditySweep', sw.side, 'strong', sw.details);
+  }
+}
 
-    function updateSignals(signals) {
-      const signalsList = document.getElementById('signalsList');
-      if (!signals || signals.length === 0) {
-        signalsList.innerHTML = '<p style="text-align: center; color: #666; margin: 50px 0;">No signals yet. Click "Generate New Signals".</p>';
-        return;
-      }
-      signalsList.innerHTML = signals.slice(-10).reverse().map(signal => `
-        <div class="signal-item">
-          <div class="signal-header">
-            <span class="signal-action ${signal.recommendation}">${signal.recommendation}</span>
-            <span class="risk-indicator risk-${signal.risk_level}">${signal.risk_level} RISK</span>
-          </div>
-          <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
-            ${signal.liquidation_data.o.q} XRP @ $${signal.liquidation_data.o.p}
-            (${signal.liquidation_data.o.S} liquidation)
-          </div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width: ${(signal.confidence || 0) * 10}%"></div>
-          </div>
-          <div style="font-size: 0.8rem; color: #666;">
-            Confidence: ${signal.confidence || 0}/10 | ${(signal.reasoning || '').substring(0, 100)}...
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function updateChart(signals) {
-      const buyCount = signals.filter(s => s.recommendation === 'BUY').length;
-      const sellCount = signals.filter(s => s.recommendation === 'SELL').length;
-      const holdCount = signals.filter(s => s.recommendation === 'HOLD').length;
-      const ctx = document.getElementById('signalChart').getContext('2d');
-      if (signalChart) signalChart.destroy();
-      signalChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: ['BUY', 'SELL', 'HOLD'], datasets: [{ data: [buyCount, sellCount, holdCount], backgroundColor: ['#28a745', '#dc3545', '#ffc107'], borderWidth: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-      });
-    }
-
-    function randomFrom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-
-    async function simulateNew() {
-      const live = await updatePriceCard();
-      const sides = ["BUY", "SELL"];
-      const quantities = [2000, 3500, 4000, 5500, 7000, 8500];
-      const price = (live * (1 + (Math.random()*0.02 - 0.01))).toFixed(4); // ±1%
-      const liq = {
-        e: "forceOrder",
-        E: Date.now(),
-        o: {
-          s: "XRPUSDT",
-          S: randomFrom(sides),
-          q: String(randomFrom(quantities)),
-          p: String(price),
-          ap: String(price),
-          X: "FILLED"
-        }
-      };
-      const meets = parseFloat(liq.o.q) >= 3000;
-      const processed = {
-        ...liq,
-        timestamp: new Date(liq.E).toISOString(),
-        quantity_usd: parseFloat(liq.o.q) * parseFloat(liq.o.p),
-        meets_criteria: meets
-      };
-      if (meets) {
-        const signal = {
-          liquidation_data: processed,
-          recommendation: processed.o.S === "SELL" ? "BUY" : "SELL",
-          confidence: 7,
-          risk_level: "MEDIUM",
-          reasoning: "Rule-of-thumb mapping from liquidation direction (demo)."
-        };
-        const arr = getSignals();
-        arr.push(signal);
-        setSignals(arr);
-        updateSignals(arr);
-        updateChart(arr);
-        updateStats(arr);
-      }
-    }
-
-    async function refreshAll() {
-      await updatePriceCard();
-      const arr = getSignals();
-      updateSignals(arr);
-      updateChart(arr);
-      updateStats(arr);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      refreshAll();
-      setInterval(updatePriceCard, 15000);
-    });
-  </script>
+// -------- Boot ----------
+async function boot(){
+  await updatePrice();
+  kl1 = await fetchKlines('XRPUSDT','1m',120);
+  kl5 = await fetchKlines('XRPUSDT','5m',120);
+  draw5m();
+  await refreshOrderBook();
+  await refreshFundingOI();
+  setInterval(updatePrice, 15000);
+  setInterval(refreshOrderBook, 15000);
+  setInterval(refreshFundingOI, 60000);
+}
+document.addEventListener('DOMContentLoaded', boot);
+</script>
 </body>
 </html>
