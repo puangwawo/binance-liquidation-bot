@@ -1,286 +1,239 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XRP Liquidation Bot Dashboard – Alerts</title>
+  <title>XRP TF-5m + AI Signals</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color:#333; transition: background-color .3s; }
-    .container{ max-width:1400px; margin:0 auto; padding:20px; }
-    .header{ text-align:center; margin-bottom:20px; color:white; }
-    .header h1{ font-size:2.2rem; margin-bottom:8px; text-shadow:2px 2px 4px rgba(0,0,0,.3); }
-    .header p{ opacity:.9; }
-    .stats-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin-bottom:16px; }
-    .stat-card{ background:white; padding:18px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,.1); text-align:center; transition:transform .3s, box-shadow .3s; }
-    .stat-card:hover{ transform:translateY(-4px); box-shadow:0 15px 40px rgba(0,0,0,.15); }
-    .stat-value{ font-size:2.1rem; font-weight:700; color:#667eea; margin-bottom:6px; }
-    .stat-label{ color:#666; text-transform:uppercase; letter-spacing:1px; font-size:.9rem; }
-    .price-source { font-size:.8rem; color:#888; margin-top:6px; }
-    .controls, .settings{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:16px; }
-    .btn{ background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; border:none; padding:10px 18px; border-radius:25px; font-size:1rem; cursor:pointer; transition:all .3s; }
-    .btn:hover{ transform:translateY(-2px); box-shadow:0 10px 20px rgba(0,0,0,.2); }
-    .input, .select { padding:10px 12px; border:1px solid #ddd; border-radius:10px; min-width: 140px; }
-    .main-content{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
-    .card{ background:white; border-radius:15px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.1); }
-    .card h2{ color:#333; margin-bottom:12px; font-size:1.2rem; border-bottom:3px solid #667eea; padding-bottom:6px; }
-    .signal-item{ background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:12px; border-left:4px solid #667eea; transition:all .3s; }
-    .signal-item:hover{ background:#e9ecef; transform:translateX(5px); }
-    .signal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-    .signal-action{ padding:5px 12px; border-radius:20px; font-weight:700; font-size:.85rem; }
-    .signal-action.BUY{ background:#28a745; color:#fff; }
-    .signal-action.SELL{ background:#dc3545; color:#fff; }
-    .signal-action.HOLD{ background:#ffc107; color:#333; }
-    .confidence-bar{ width:100%; height:8px; background:#e9ecef; border-radius:4px; overflow:hidden; margin:8px 0; }
-    .confidence-fill{ height:100%; background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%); transition: width .3s; }
-    .chart-container{ position:relative; height:300px; margin-top:6px; }
-    @media (max-width: 768px){ .main-content{ grid-template-columns:1fr; } .header h1{ font-size:1.8rem; } .stats-grid{ grid-template-columns:1fr; } }
-    .risk-indicator{ display:inline-block; padding:3px 8px; border-radius:12px; font-size:.75rem; font-weight:700; margin-left:10px; }
-    .risk-LOW{ background:#d4edda; color:#155724; }
-    .risk-MEDIUM{ background:#fff3cd; color:#856404; }
-    .risk-HIGH{ background:#f8d7da; color:#721c24; }
-    .blink{ animation:blink 1s steps(2,start) 4; } @keyframes blink{ to { visibility:hidden; } }
-    .footer{ text-align:center; color:white; opacity:.85; margin:12px 0 6px; font-size:.85rem; }
-    .flash { animation: flash-bg 0.9s ease-in-out 1; }
-    @keyframes flash-bg {
-      0% { background: #ffd1d1; }
-      50% { background: #fff; }
-      100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);min-height:100vh;color:#111}
+    .container{max-width:1200px;margin:0 auto;padding:18px}
+    .header{color:#fff;text-align:center;margin-bottom:16px}
+    .header h1{font-size:2rem;margin-bottom:6px;text-shadow:2px 2px 4px rgba(0,0,0,.25)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .card{background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.08);padding:16px}
+    .card h2{font-size:1.1rem;margin-bottom:10px;border-bottom:3px solid #0ea5e9;display:inline-block;padding-bottom:4px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+    .stat{background:#f8fafc;border-radius:12px;padding:10px;text-align:center}
+    .stat .v{font-weight:700;color:#0ea5e9;font-size:1.3rem}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .btn{background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .btn.secondary{background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%)}
+    .btn.warn{background:linear-gradient(135deg,#f97316 0%,#ea580c 100%)}
+    .input,.select{padding:10px;border:1px solid #e5e7eb;border-radius:10px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:600;font-size:.85rem}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;font-size:.95rem}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#111827;background:#f3f4f6;border-radius:8px;padding:8px}
+    .ok{color:#16a34a}.warnc{color:#ea580c}.bad{color:#dc2626}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 XRP Liquidation Bot Dashboard</h1>
-      <p>Pure Frontend — Live Price + Local Signals — <b>with Big-Liquidation Alerts</b></p>
+      <h1>🚀 XRP TF‑5m + AI Recommendations</h1>
+      <div>Live price • 5‑minute klines • AI summary (optional)</div>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="currentPrice">$0.00</div>
-        <div class="stat-label">XRP Price (USDT)</div>
-        <div class="price-source" id="priceSource">Source: —</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalLiquidations">0</div>
-        <div class="stat-label">Total Liquidations</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalSignals">0</div>
-        <div class="stat-label">Trading Signals</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="avgConfidence">0%</div>
-        <div class="stat-label">Avg Confidence</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalVolume">$0</div>
-        <div class="stat-label">Total Volume</div>
-      </div>
-    </div>
-
-    <div class="settings">
-      <input id="usdThreshold" class="input" type="number" min="100" step="100" value="30000" />
-      <label for="usdThreshold" style="align-self:center;">USD threshold (alert if ≥ this)</label>
-      <select id="soundToggle" class="select">
-        <option value="on" selected>Sound: ON</option>
-        <option value="off">Sound: OFF</option>
-      </select>
-      <button class="btn" onclick="refreshAll()">🔄 Refresh</button>
-      <button class="btn" onclick="simulateNew()">⚡ Generate New Signals</button>
-      <button class="btn" onclick="clearData()">🧹 Clear</button>
-    </div>
-
-    <div class="main-content">
+    <div class="row">
       <div class="card">
-        <h2>📊 Signal Distribution</h2>
-        <div class="chart-container">
-          <canvas id="signalChart"></canvas>
+        <h2>Price & Quick Stats</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="v" id="price">$0.00</div>
+            <div>Price (USDT)</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="trend">—</div>
+            <div>TF‑5m Trend</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="rsi">—</div>
+            <div>RSI(14)</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="maSig">—</div>
+            <div>MA Cross</div>
+          </div>
         </div>
+        <div class="controls">
+          <button class="btn" onclick="refreshAll()">🔄 Refresh</button>
+          <button class="btn secondary" onclick="analyzeAI()">🧠 Analyze with AI</button>
+          <select id="source" class="select">
+            <option value="binance" selected>Binance</option>
+            <option value="coingecko">CoinGecko (price only)</option>
+          </select>
+          <input id="apiBase" class="input" placeholder="API base (optional, e.g. https://xxxx.ngrok.io)" style="min-width:340px"/>
+        </div>
+        <div class="kv"><div>AI Action:</div><div id="aiAction" class="pill">—</div></div>
+        <div class="kv"><div>TP / SL:</div><div id="aiTPSL">—</div></div>
+        <div class="kv"><div>Confidence:</div><div id="aiConf">—</div></div>
+        <div class="kv"><div>Reasoning:</div><div id="aiReason">—</div></div>
       </div>
 
       <div class="card">
-        <h2>🎯 Latest Trading Signals</h2>
-        <div id="signalsList">
-          <p style="text-align: center; color: #666; margin: 40px 0;">No signals yet. Click "Generate New Signals".</p>
-        </div>
+        <h2>TF‑5m Chart (Last 100 candles)</h2>
+        <canvas id="chart"></canvas>
       </div>
     </div>
 
-    <div class="footer">
-      Alerts trigger when <b>quantity × price ≥ threshold</b>. Default = 30,000 USD.
+    <div class="card">
+      <h2>Last 10 Candles (5m)</h2>
+      <div id="last10" class="mono" style="overflow:auto;max-height:240px"></div>
     </div>
   </div>
 
-  <audio id="alertAudio" preload="auto" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAAAAA=="></audio>
-
   <script>
-    let signalChart = null;
-    const LS_KEY = "xrp_signals_v2";
-    let lastPrice = 3.0;
+    let chart = null;
+    let klines = [];
+    let lastPrice = 0;
 
-    function getSignals() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(_) { return []; } }
-    function setSignals(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
-    function clearData() { localStorage.removeItem(LS_KEY); updateSignals([]); updateChart([]); updateStats([]); }
-
-    async function fetchLivePrice() {
+    async function fetchPrice() {
+      const src = document.getElementById('source').value;
       try {
-        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT", { cache: "no-store" });
-        if (!r.ok) throw new Error("binance not ok");
-        const j = await r.json();
-        const p = parseFloat(j.price);
-        if (isFinite(p) && p > 0) return { price: p, source: "Binance" };
-        throw new Error("invalid binance");
-      } catch (e) {
-        try {
-          const r2 = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd", { cache: "no-store" });
-          if (!r2.ok) throw new Error("cg not ok");
-          const j2 = await r2.json();
-          const p2 = parseFloat(j2?.ripple?.usd);
-          if (isFinite(p2) && p2 > 0) return { price: p2, source: "CoinGecko" };
-          throw new Error("invalid cg");
-        } catch (e2) {
-          return { price: lastPrice || 3.00, source: "Fallback" };
+        if (src === 'binance') {
+          const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT', {cache:'no-store'});
+          const j = await r.json();
+          return parseFloat(j.price);
+        } else {
+          const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd',{cache:'no-store'});
+          const j = await r.json();
+          return parseFloat(j.ripple.usd);
         }
+      } catch(e) {
+        return lastPrice || 3.0;
       }
     }
 
-    async function updatePriceCard() {
-      const { price, source } = await fetchLivePrice();
-      lastPrice = price;
-      const el = document.getElementById('currentPrice');
-      const src = document.getElementById('priceSource');
-      el.textContent = '$' + (Math.round(price * 10000) / 10000).toLocaleString();
-      src.textContent = 'Source: ' + source;
-      el.classList.add('blink');
-      setTimeout(() => el.classList.remove('blink'), 700);
-      return price;
+    async function fetchKlines() {
+      // 5m interval, last 100 candles
+      const url = 'https://api.binance.com/api/v3/klines?symbol=XRPUSDT&interval=5m&limit=100';
+      const r = await fetch(url, {cache:'no-store'});
+      const j = await r.json();
+      // kline format: [openTime, open, high, low, close, volume, closeTime, ...]
+      return j.map(x => ({
+        t: x[0], o: parseFloat(x[1]), h: parseFloat(x[2]), l: parseFloat(x[3]), c: parseFloat(x[4]), v: parseFloat(x[5])
+      }));
     }
 
-    function updateStats(signals) {
-      const total = signals.length;
-      const totalVol = signals.reduce((acc, s) => acc + (parseFloat(s.liquidation_data.o.q) * parseFloat(s.liquidation_data.o.p)), 0);
-      const avgConf = total ? (signals.reduce((a, s) => a + (s.confidence || 0), 0) / total) : 0;
-      document.getElementById('totalLiquidations').textContent = total.toString();
-      document.getElementById('totalSignals').textContent = total.toString();
-      document.getElementById('avgConfidence').textContent = Math.round(avgConf) + '%';
-      document.getElementById('totalVolume').textContent = '$' + Math.round(totalVol).toLocaleString();
-    }
-
-    function updateSignals(signals) {
-      const signalsList = document.getElementById('signalsList');
-      if (!signals || signals.length === 0) {
-        signalsList.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">No signals yet. Click "Generate New Signals".</p>';
-        return;
+    function sma(arr, n, accessor) {
+      const out=[]; let sum=0;
+      for (let i=0;i<arr.length;i++){
+        sum += accessor(arr[i]);
+        if (i>=n) sum -= accessor(arr[i-n]);
+        out.push(i>=n-1 ? sum/n : null);
       }
-      signalsList.innerHTML = signals.slice(-12).reverse().map(signal => `
-        <div class="signal-item">
-          <div class="signal-header">
-            <span class="signal-action ${signal.recommendation}">$${signal.recommendation}</span>
-            <span class="risk-indicator risk-$${signal.risk_level}">$${signal.risk_level} RISK</span>
-          </div>
-          <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">
-            $${signal.liquidation_data.o.q} XRP @ $$${signal.liquidation_data.o.p}
-            ($${signal.liquidation_data.o.S} liquidation) — <b>$${(parseFloat(signal.liquidation_data.o.q)*parseFloat(signal.liquidation_data.o.p)).toLocaleString(undefined,{maximumFractionDigits:0})} USD</b>
-          </div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width: $${(signal.confidence || 0) * 10}%"></div>
-          </div>
-          <div style="font-size: 0.8rem; color: #666;">
-            Confidence: $${signal.confidence || 0}/10 | $${(signal.reasoning || '').substring(0, 100)}...
-          </div>
-        </div>
-      `).join('');
+      return out;
     }
 
-    function updateChart(signals) {
-      const buyCount = signals.filter(s => s.recommendation === 'BUY').length;
-      const sellCount = signals.filter(s => s.recommendation === 'SELL').length;
-      const holdCount = signals.filter(s => s.recommendation === 'HOLD').length;
-      const ctx = document.getElementById('signalChart').getContext('2d');
-      if (signalChart) signalChart.destroy();
-      signalChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: ['BUY', 'SELL', 'HOLD'], datasets: [{ data: [buyCount, sellCount, holdCount], backgroundColor: ['#28a745', '#dc3545', '#ffc107'], borderWidth: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    function rsi14(values) {
+      // classic RSI(14) on closes
+      const n=14;
+      if (values.length < n+1) return null;
+      let gains=0, losses=0;
+      for (let i=1;i<=n;i++){
+        const diff = values[i]-values[i-1];
+        if (diff>=0) gains += diff; else losses -= diff;
+      }
+      gains/=n; losses/=n;
+      let rs = losses===0 ? 100 : gains/losses;
+      let rsi = 100 - (100/(1+rs));
+      // smoothed
+      for (let i=n+1;i<values.length;i++){
+        const diff = values[i]-values[i-1];
+        const gain = diff>0?diff:0, loss = diff<0?-diff:0;
+        gains = (gains*(n-1)+gain)/n;
+        losses = (losses*(n-1)+loss)/n;
+      }
+      rs = losses===0 ? 100 : gains/losses;
+      rsi = 100 - (100/(1+rs));
+      return Math.round(rsi*10)/10;
+    }
+
+    function heuristicSignals() {
+      const closes = klines.map(k=>k.c);
+      const ma7 = sma(klines,7,k=>k.c);
+      const ma25 = sma(klines,25,k=>k.c);
+      const last = klines.length-1;
+      let maSig = '—';
+      if (ma7[last] && ma25[last]) {
+        if (ma7[last] > ma25[last]) maSig = 'Bullish';
+        else if (ma7[last] < ma25[last]) maSig = 'Bearish';
+        else maSig = 'Flat';
+      }
+      const r = rsi14(closes);
+      const trend = closes[last] > closes[last-6] ? 'Up' : 'Down'; // last 30min move
+      document.getElementById('maSig').textContent = maSig;
+      document.getElementById('rsi').textContent = r ?? '—';
+      document.getElementById('trend').textContent = trend;
+      return { maSig, rsi: r, trend };
+    }
+
+    function drawChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const labels = klines.map(k=> new Date(k.t).toLocaleTimeString());
+      const data = klines.map(k=>k.c);
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type:'line',
+        data:{labels,datasets:[{label:'Close',data,fill:false,borderWidth:2}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
       });
     }
 
-    function randomFrom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-
-    function maybeAlert(liq) {
-      const threshold = parseFloat(document.getElementById('usdThreshold').value) || 30000;
-      const usd = parseFloat(liq.o.q) * parseFloat(liq.o.p);
-      if (usd >= threshold) {
-        document.body.classList.add('flash');
-        setTimeout(() => document.body.classList.remove('flash'), 900);
-        const soundToggle = document.getElementById('soundToggle').value;
-        if (soundToggle === 'on') {
-          const audio = document.getElementById('alertAudio');
-          audio.currentTime = 0;
-          audio.play().catch(()=>{});
-        }
-      }
-    }
-
-    async function simulateNew() {
-      const live = await updatePriceCard();
-      const sides = ["BUY", "SELL"];
-      const quantities = [2000, 3500, 4000, 5500, 7000, 8500, 10000, 12000, 15000];
-      const batch = Math.ceil(Math.random()*3);
-      const arr = getSignals();
-      for (let i=0; i<batch; i++) {
-        const price = (live * (1 + (Math.random()*0.02 - 0.01))).toFixed(4);
-        const liq = {
-          e: "forceOrder",
-          E: Date.now(),
-          o: {
-            s: "XRPUSDT",
-            S: randomFrom(sides),
-            q: String(randomFrom(quantities)),
-            p: String(price),
-            ap: String(price),
-            X: "FILLED"
-          }
-        };
-        const meets = parseFloat(liq.o.q) >= 3000;
-        const processed = {
-          ...liq,
-          timestamp: new Date(liq.E).toISOString(),
-          quantity_usd: parseFloat(liq.o.q) * parseFloat(liq.o.p),
-          meets_criteria: meets
-        };
-        if (meets) {
-          const signal = {
-            liquidation_data: processed,
-            recommendation: processed.o.S === "SELL" ? "BUY" : "SELL",
-            confidence: 7,
-            risk_level: "MEDIUM",
-            reasoning: "Rule-of-thumb mapping from liquidation direction (demo)."
-          };
-          arr.push(signal);
-          maybeAlert(liq);
-        }
-      }
-      setSignals(arr);
-      updateSignals(arr);
-      updateChart(arr);
-      updateStats(arr);
+    function showLast10() {
+      const last = klines.slice(-10).map(k=> ({
+        time: new Date(k.t).toISOString(),
+        o:k.o, h:k.h, l:k.l, c:k.c, v:k.v
+      }));
+      document.getElementById('last10').textContent = JSON.stringify(last, null, 2);
     }
 
     async function refreshAll() {
-      await updatePriceCard();
-      const arr = getSignals();
-      updateSignals(arr);
-      updateChart(arr);
-      updateStats(arr);
+      lastPrice = await fetchPrice();
+      document.getElementById('price').textContent = '$'+ (Math.round(lastPrice*10000)/10000).toLocaleString();
+      klines = await fetchKlines();
+      heuristicSignals();
+      drawChart();
+      showLast10();
+    }
+
+    async function analyzeAI() {
+      const base = (document.getElementById('apiBase').value || '').trim();
+      if (!base) {
+        alert('Isi API base (misal URL ngrok dari Colab) untuk pakai analisis AI.');
+        return;
+      }
+      const payload = {
+        symbol: "XRPUSDT",
+        timeframe: "5m",
+        last_price: lastPrice,
+        klines: klines.slice(-60) // send last 60 candles
+      };
+      try {
+        const r = await fetch(base.replace(/\/$/,'') + '/api/ai_analyze', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.error || 'AI error');
+        const out = j.data;
+        document.getElementById('aiAction').textContent = out.action || '—';
+        document.getElementById('aiTPSL').textContent = (out.tp_pct!=null && out.sl_pct!=null) ? `${out.tp_pct}% / ${out.sl_pct}%`:'—';
+        document.getElementById('aiConf').textContent = out.confidence!=null ? `${out.confidence}/10`:'—';
+        document.getElementById('aiReason').textContent = out.reason || '—';
+      } catch(e) {
+        document.getElementById('aiReason').textContent = 'Failed to call AI: ' + e.message;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       refreshAll();
-      setInterval(updatePriceCard, 15000);
+      setInterval(async ()=>{
+        lastPrice = await fetchPrice();
+        document.getElementById('price').textContent = '$'+ (Math.round(lastPrice*10000)/10000).toLocaleString();
+      }, 15000);
     });
   </script>
 </body>
