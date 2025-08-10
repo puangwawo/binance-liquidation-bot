@@ -4,310 +4,237 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XRP Pro Dashboard — Alerts + Anti-Bot Opposite (Scalp)</title>
+  <title>XRP TF-5m + AI Signals</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);min-height:100vh;color:#0f172a;transition:background-color .3s}
-    .container{max-width:1300px;margin:0 auto;padding:18px}
-    .header{color:#fff;text-align:center;margin-bottom:14px}
-    .header h1{font-size:2rem;margin-bottom:6px;text-shadow:0 2px 12px rgba(0,0,0,.25)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    body{font-family:'Inter',system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);min-height:100vh;color:#111}
+    .container{max-width:1200px;margin:0 auto;padding:18px}
+    .header{color:#fff;text-align:center;margin-bottom:16px}
+    .header h1{font-size:2rem;margin-bottom:6px;text-shadow:2px 2px 4px rgba(0,0,0,.25)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
     .card{background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.08);padding:16px}
-    .card h2{font-size:1.05rem;margin-bottom:10px;border-bottom:3px solid #0ea5e9;display:inline-block;padding-bottom:4px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .card h2{font-size:1.1rem;margin-bottom:10px;border-bottom:3px solid #0ea5e9;display:inline-block;padding-bottom:4px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+    .stat{background:#f8fafc;border-radius:12px;padding:10px;text-align:center}
+    .stat .v{font-weight:700;color:#0ea5e9;font-size:1.3rem}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
     .btn{background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
-    .btn.green{background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%)}
-    .btn.orange{background:linear-gradient(135deg,#f97316 0%,#ea580c 100%)}
-    .btn.gray{background:#475569}
-    .input,.select{padding:10px;border:1px solid #e2e8f0;border-radius:10px}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:600}
-    .ok{background:#dcfce7;color:#14532d}
-    .bad{background:#fee2e2;color:#7f1d1d}
-    .mono{font-family:ui-monospace,Menlo,monospace;background:#f8fafc;border-radius:10px;padding:10px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:.95rem}
-    th{text-align:left;background:#f1f5f9}
-    .num{text-align:right}
-    .chart-box{position:relative;height:220px}
-    .flash { animation: flash-bg 0.9s ease-in-out 1; }
-    @keyframes flash-bg {
-      0% { background: #ffd1d1; }
-      50% { background: #fff; }
-      100% { background: linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%); }
-    }
+    .btn.secondary{background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%)}
+    .btn.warn{background:linear-gradient(135deg,#f97316 0%,#ea580c 100%)}
+    .input,.select{padding:10px;border:1px solid #e5e7eb;border-radius:10px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:600;font-size:.85rem}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;font-size:.95rem}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#111827;background:#f3f4f6;border-radius:8px;padding:8px}
+    .ok{color:#16a34a}.warnc{color:#ea580c}.bad{color:#dc2626}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 XRP Pro Dashboard</h1>
-      <div>Live Price • Big-Liq Alerts • Force/Storm • Opposite (Anti‑Bot) Scalp • Trend Filters 1m/5m</div>
+      <h1>🚀 XRP TF‑5m + AI Recommendations</h1>
+      <div>Live price • 5‑minute klines • AI summary (optional)</div>
     </div>
 
-    <div class="grid">
+    <div class="row">
       <div class="card">
-        <h2>Live & Alerts</h2>
-        <div class="row" style="margin-bottom:8px">
-          <div>Price: <b id="currentPrice">$0.0000</b> <small id="priceSource" style="color:#64748b">Source: —</small></div>
-          <div>Trend 1m: <span id="t1" class="pill">—</span></div>
-          <div>Trend 5m: <span id="t5" class="pill">—</span></div>
-          <div>MA: <span id="maStat">—</span></div>
+        <h2>Price & Quick Stats</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="v" id="price">$0.00</div>
+            <div>Price (USDT)</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="trend">—</div>
+            <div>TF‑5m Trend</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="rsi">—</div>
+            <div>RSI(14)</div>
+          </div>
+          <div class="stat">
+            <div class="v" id="maSig">—</div>
+            <div>MA Cross</div>
+          </div>
         </div>
-        <div class="row">
-          <input id="usdThreshold" class="input" type="number" min="100" step="100" value="30000" title="Alert when USD >= this value"/>
-          <select id="soundToggle" class="select"><option value="on" selected>Sound: ON</option><option value="off">Sound: OFF</option></select>
-          <button class="btn" onclick="simulateNew()">⚡ Generate Signals</button>
-          <button class="btn green" onclick="forceBig()">💥 Force Big</button>
-          <button class="btn orange" onclick="stormMode()">🌪️ Storm 10s</button>
-          <button class="btn gray" onclick="clearSignals()">🧹 Clear Signals</button>
-        </div>
-        <div class="chart-box" style="margin-top:10px"><canvas id="signalChart"></canvas></div>
-      </div>
-
-      <div class="card">
-        <h2>Opposite (Anti‑Bot) Paper Trading</h2>
-        <div class="row" style="margin-bottom:8px">
-          <label>TP % <input id="tp" class="input" type="number" value="0.4" step="0.05" style="width:90px"/></label>
-          <label>SL % <input id="sl" class="input" type="number" value="0.35" step="0.05" style="width:90px"/></label>
-          <label>Size (USDT) <input id="size" class="input" type="number" value="100" step="10" style="width:110px"/></label>
-          <select id="mode" class="select">
-            <option value="strict" selected>Strict (avoid strong 5m trend)</option>
-            <option value="relaxed">Relaxed (enter if 1m supports opposite)</option>
+        <div class="controls">
+          <button class="btn" onclick="refreshAll()">🔄 Refresh</button>
+          <button class="btn secondary" onclick="analyzeAI()">🧠 Analyze with AI</button>
+          <select id="source" class="select">
+            <option value="binance" selected>Binance</option>
+            <option value="coingecko">CoinGecko (price only)</option>
           </select>
-          <button class="btn gray" onclick="refreshTrends()">🔄 Refresh Trends</button>
+          <input id="apiBase" class="input" placeholder="API base (optional, e.g. https://xxxx.ngrok.io)" style="min-width:340px"/>
         </div>
-        <div class="row" style="margin-bottom:8px">
-          <button class="btn" onclick="feedSignal('BUY')">Feed Bot: BUY</button>
-          <button class="btn orange" onclick="feedSignal('SELL')">Feed Bot: SELL</button>
-        </div>
-        <div class="row" style="gap:20px;margin:8px 0">
-          <div>Open Pos: <b id="openCnt">0</b></div>
-          <div>PnL (realized): <b id="pnlReal">0.00</b> USDT</div>
-          <div>PnL (open): <b id="pnlOpen">0.00</b> USDT</div>
-          <div>Win Rate: <b id="wr">0%</b></div>
-        </div>
-        <div style="max-height:260px;overflow:auto;margin-top:6px">
-          <table>
-            <thead><tr><th>Time</th><th>Side</th><th class="num">Entry</th><th class="num">TP</th><th class="num">SL</th><th class="num">Size</th><th class="num">Unreal</th><th>Status</th></tr></thead>
-            <tbody id="posBody"></tbody>
-          </table>
-        </div>
+        <div class="kv"><div>AI Action:</div><div id="aiAction" class="pill">—</div></div>
+        <div class="kv"><div>TP / SL:</div><div id="aiTPSL">—</div></div>
+        <div class="kv"><div>Confidence:</div><div id="aiConf">—</div></div>
+        <div class="kv"><div>Reasoning:</div><div id="aiReason">—</div></div>
+      </div>
+
+      <div class="card">
+        <h2>TF‑5m Chart (Last 100 candles)</h2>
+        <canvas id="chart"></canvas>
       </div>
     </div>
 
-    <div class="grid" style="margin-top:14px">
-      <div class="card">
-        <h2>Latest Signals</h2>
-        <div id="signalsList" class="mono" style="max-height:220px;overflow:auto">[]</div>
-      </div>
-      <div class="card">
-        <h2>5m Close Prices (Quick View)</h2>
-        <div class="chart-box"><canvas id="closeChart"></canvas></div>
-      </div>
+    <div class="card">
+      <h2>Last 10 Candles (5m)</h2>
+      <div id="last10" class="mono" style="overflow:auto;max-height:240px"></div>
     </div>
   </div>
 
-  <audio id="alertAudio" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-
   <script>
-    let signalChart=null, closeChart=null;
-    let lastPrice=3.0, priceSource='—';
-    let signalsKey='xrp_signals_pro', signals=[];
-    let positions=[], realized=0, win=0, loss=0;
-    let kl1=[], kl5=[];
+    let chart = null;
+    let klines = [];
+    let lastPrice = 0;
 
-    // ---------- Live Price ----------
-    async function fetchLivePrice(){
-      try{
-        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT",{cache:"no-store"});
-        if(!r.ok) throw new Error("binance");
+    async function fetchPrice() {
+      const src = document.getElementById('source').value;
+      try {
+        if (src === 'binance') {
+          const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT', {cache:'no-store'});
+          const j = await r.json();
+          return parseFloat(j.price);
+        } else {
+          const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd',{cache:'no-store'});
+          const j = await r.json();
+          return parseFloat(j.ripple.usd);
+        }
+      } catch(e) {
+        return lastPrice || 3.0;
+      }
+    }
+
+    async function fetchKlines() {
+      // 5m interval, last 100 candles
+      const url = 'https://api.binance.com/api/v3/klines?symbol=XRPUSDT&interval=5m&limit=100';
+      const r = await fetch(url, {cache:'no-store'});
+      const j = await r.json();
+      // kline format: [openTime, open, high, low, close, volume, closeTime, ...]
+      return j.map(x => ({
+        t: x[0], o: parseFloat(x[1]), h: parseFloat(x[2]), l: parseFloat(x[3]), c: parseFloat(x[4]), v: parseFloat(x[5])
+      }));
+    }
+
+    function sma(arr, n, accessor) {
+      const out=[]; let sum=0;
+      for (let i=0;i<arr.length;i++){
+        sum += accessor(arr[i]);
+        if (i>=n) sum -= accessor(arr[i-n]);
+        out.push(i>=n-1 ? sum/n : null);
+      }
+      return out;
+    }
+
+    function rsi14(values) {
+      // classic RSI(14) on closes
+      const n=14;
+      if (values.length < n+1) return null;
+      let gains=0, losses=0;
+      for (let i=1;i<=n;i++){
+        const diff = values[i]-values[i-1];
+        if (diff>=0) gains += diff; else losses -= diff;
+      }
+      gains/=n; losses/=n;
+      let rs = losses===0 ? 100 : gains/losses;
+      let rsi = 100 - (100/(1+rs));
+      // smoothed
+      for (let i=n+1;i<values.length;i++){
+        const diff = values[i]-values[i-1];
+        const gain = diff>0?diff:0, loss = diff<0?-diff:0;
+        gains = (gains*(n-1)+gain)/n;
+        losses = (losses*(n-1)+loss)/n;
+      }
+      rs = losses===0 ? 100 : gains/losses;
+      rsi = 100 - (100/(1+rs));
+      return Math.round(rsi*10)/10;
+    }
+
+    function heuristicSignals() {
+      const closes = klines.map(k=>k.c);
+      const ma7 = sma(klines,7,k=>k.c);
+      const ma25 = sma(klines,25,k=>k.c);
+      const last = klines.length-1;
+      let maSig = '—';
+      if (ma7[last] && ma25[last]) {
+        if (ma7[last] > ma25[last]) maSig = 'Bullish';
+        else if (ma7[last] < ma25[last]) maSig = 'Bearish';
+        else maSig = 'Flat';
+      }
+      const r = rsi14(closes);
+      const trend = closes[last] > closes[last-6] ? 'Up' : 'Down'; // last 30min move
+      document.getElementById('maSig').textContent = maSig;
+      document.getElementById('rsi').textContent = r ?? '—';
+      document.getElementById('trend').textContent = trend;
+      return { maSig, rsi: r, trend };
+    }
+
+    function drawChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const labels = klines.map(k=> new Date(k.t).toLocaleTimeString());
+      const data = klines.map(k=>k.c);
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type:'line',
+        data:{labels,datasets:[{label:'Close',data,fill:false,borderWidth:2}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+      });
+    }
+
+    function showLast10() {
+      const last = klines.slice(-10).map(k=> ({
+        time: new Date(k.t).toISOString(),
+        o:k.o, h:k.h, l:k.l, c:k.c, v:k.v
+      }));
+      document.getElementById('last10').textContent = JSON.stringify(last, null, 2);
+    }
+
+    async function refreshAll() {
+      lastPrice = await fetchPrice();
+      document.getElementById('price').textContent = '$'+ (Math.round(lastPrice*10000)/10000).toLocaleString();
+      klines = await fetchKlines();
+      heuristicSignals();
+      drawChart();
+      showLast10();
+    }
+
+    async function analyzeAI() {
+      const base = (document.getElementById('apiBase').value || '').trim();
+      if (!base) {
+        alert('Isi API base (misal URL ngrok dari Colab) untuk pakai analisis AI.');
+        return;
+      }
+      const payload = {
+        symbol: "XRPUSDT",
+        timeframe: "5m",
+        last_price: lastPrice,
+        klines: klines.slice(-60) // send last 60 candles
+      };
+      try {
+        const r = await fetch(base.replace(/\/$/,'') + '/api/ai_analyze', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        });
         const j = await r.json();
-        return { price: parseFloat(j.price), source:"Binance" };
-      }catch(e){
-        try{
-          const r2 = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",{cache:"no-store"});
-          if(!r2.ok) throw new Error("cg");
-          const j2=await r2.json();
-          return { price: parseFloat(j2?.ripple?.usd), source:"CoinGecko" };
-        }catch(e2){
-          return { price: lastPrice||3.0, source:"Fallback" };
-        }
-      }
-    }
-    async function updatePriceCard(){
-      const res = await fetchLivePrice();
-      lastPrice = res.price; priceSource=res.source;
-      document.getElementById('currentPrice').textContent = '$'+(Math.round(lastPrice*10000)/10000).toLocaleString();
-      document.getElementById('priceSource').textContent = 'Source: '+priceSource;
-      return lastPrice;
-    }
-
-    // ---------- Klines & Trends ----------
-    async function fetchKlines(symbol, interval, limit){
-      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      const r = await fetch(url,{cache:'no-store'}); const j = await r.json();
-      return j.map(x=>({t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
-    }
-    function sma(arr, n, accessor){ const out=[]; let sum=0;
-      for(let i=0;i<arr.length;i++){ const v=accessor(arr[i]); sum+=v; if(i>=n) sum-=accessor(arr[i-n]); out.push(i>=n-1?sum/n:null);} return out; }
-    function trendFrom(kl){
-      const ma7=sma(kl,7,k=>k.c), ma25=sma(kl,25,k=>k.c);
-      const i=kl.length-1; let state='FLAT', strong=false, maStat='—';
-      if(ma7[i] && ma25[i]){
-        const up = ma7[i]>ma25[i]; const slope = kl[i].c - kl[i-6].c;
-        if(up && slope>0) state='UP'; if(!up && slope<0) state='DOWN';
-        strong = Math.abs(slope/kl[i-6].c) > 0.0035; // >0.35% over 30m/6m
-        maStat = up?'MA7>MA25':'MA7<MA25';
-      }
-      return {state, strong, maStat};
-    }
-    function renderTrends(){
-      const t1=trendFrom(kl1), t5=trendFrom(kl5);
-      const el1=document.getElementById('t1'), el5=document.getElementById('t5');
-      el1.textContent=t1.state; el1.className='pill '+(t1.state==='UP'?'ok':t1.state==='DOWN'?'bad':'');
-      el5.textContent=t5.state; el5.className='pill '+(t5.state==='UP'?'ok':t5.state==='DOWN'?'bad':'');
-      document.getElementById('maStat').textContent = `${t1.maStat} (1m), ${t5.maStat} (5m)`;
-      return {t1,t5};
-    }
-    async function refreshTrends(){
-      kl1 = await fetchKlines('XRPUSDT','1m',100);
-      kl5 = await fetchKlines('XRPUSDT','5m',100);
-      renderTrends(); drawCloseChart();
-    }
-
-    // ---------- Signals store ----------
-    function loadSignals(){ try{return JSON.parse(localStorage.getItem(signalsKey))||[]}catch(_){return []} }
-    function saveSignals(arr){ localStorage.setItem(signalsKey, JSON.stringify(arr)); }
-    function clearSignals(){ signals=[]; saveSignals(signals); renderSignals(); updateSignalChart(); }
-
-    // ---------- Alerts ----------
-    function maybeAlert(liq){
-      const threshold = parseFloat(document.getElementById('usdThreshold').value)||30000;
-      const usd = parseFloat(liq.o.q)*parseFloat(liq.o.p);
-      if(usd>=threshold){
-        document.body.classList.add('flash'); setTimeout(()=>document.body.classList.remove('flash'),900);
-        if(document.getElementById('soundToggle').value==='on'){
-          const a=document.getElementById('alertAudio'); a.currentTime=0; a.play().catch(()=>{});
-        }
+        if (!j.success) throw new Error(j.error || 'AI error');
+        const out = j.data;
+        document.getElementById('aiAction').textContent = out.action || '—';
+        document.getElementById('aiTPSL').textContent = (out.tp_pct!=null && out.sl_pct!=null) ? `${out.tp_pct}% / ${out.sl_pct}%`:'—';
+        document.getElementById('aiConf').textContent = out.confidence!=null ? `${out.confidence}/10`:'—';
+        document.getElementById('aiReason').textContent = out.reason || '—';
+      } catch(e) {
+        document.getElementById('aiReason').textContent = 'Failed to call AI: ' + e.message;
       }
     }
 
-    // ---------- Generate sample signals ----------
-    function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)] }
-    async function simulateNew(){
-      const live = await updatePriceCard();
-      const sides=['BUY','SELL']; const quantities=[2000,3500,4000,5500,7000,8500,10000,12000,15000];
-      const batch=Math.ceil(Math.random()*3);
-      for(let i=0;i<batch;i++){
-        const price = (live*(1+(Math.random()*0.02-0.01))).toFixed(4);
-        const liq = { e:'forceOrder', E:Date.now(), o:{ s:'XRPUSDT', S:randomFrom(sides), q:String(randomFrom(quantities)), p:String(price), ap:String(price), X:'FILLED' } };
-        const meets = parseFloat(liq.o.q)>=3000;
-        const processed = {...liq, timestamp:new Date(liq.E).toISOString(), quantity_usd: parseFloat(liq.o.q)*parseFloat(liq.o.p), meets_criteria:meets };
-        if(meets){
-          const signal = { liquidation_data: processed, recommendation: processed.o.S==='SELL'?'BUY':'SELL', confidence:7, risk_level:'MEDIUM', reasoning:'Demo mapping' };
-          signals.push(signal); maybeAlert(liq);
-        }
-      }
-      saveSignals(signals); renderSignals(); updateSignalChart();
-    }
-    async function forceBig(){
-      const live = await updatePriceCard();
-      const threshold = parseFloat(document.getElementById('usdThreshold').value)||30000;
-      const targetUsd=threshold*(1+Math.random()*0.2);
-      const q=Math.max(3000, Math.round(targetUsd/live));
-      const liq={ e:'forceOrder', E:Date.now(), o:{ s:'XRPUSDT', S:Math.random()<0.5?'BUY':'SELL', q:String(q), p:String(live.toFixed(4)), ap:String(live.toFixed(4)), X:'FILLED' } };
-      const processed = {...liq, timestamp:new Date(liq.E).toISOString(), quantity_usd: parseFloat(liq.o.q)*parseFloat(liq.o.p), meets_criteria:true };
-      const signal = { liquidation_data: processed, recommendation: processed.o.S==='SELL'?'BUY':'SELL', confidence:7, risk_level:'MEDIUM', reasoning:'Forced big liq' };
-      signals.push(signal); maybeAlert(liq); saveSignals(signals); renderSignals(); updateSignalChart();
-    }
-    async function stormMode(){
-      const endAt=Date.now()+10000; async function loop(){ if(Date.now()>endAt) return; await simulateNew(); setTimeout(loop, 400+Math.random()*400); } loop();
-    }
-
-    // ---------- Render signals + doughnut ----------
-    function renderSignals(){
-      const list=document.getElementById('signalsList');
-      if(!signals.length){ list.textContent='[]'; return; }
-      list.textContent = JSON.stringify(signals.slice(-50), null, 2);
-    }
-    function updateSignalChart(){
-      const buy=signals.filter(s=>s.recommendation==='BUY').length;
-      const sell=signals.filter(s=>s.recommendation==='SELL').length;
-      const hold=signals.filter(s=>s.recommendation==='HOLD').length;
-      const ctx=document.getElementById('signalChart').getContext('2d');
-      if(signalChart) signalChart.destroy();
-      signalChart=new Chart(ctx,{type:'doughnut',data:{labels:['BUY','SELL','HOLD'],datasets:[{data:[buy,sell,hold],backgroundColor:['#22c55e','#ef4444','#fde047'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}},responsive:true,maintainAspectRatio:false}});
-    }
-
-    // ---------- Anti-Bot (Opposite) paper trading ----------
-    function fmt(n,d=4){ return (+n).toFixed(d); }
-    function feedSignal(side){
-      const opp = side==='BUY'?'SELL':'BUY';
-      const now=new Date().toISOString();
-      const {t1,t5}=renderTrends();
-      const tpPct=+document.getElementById('tp').value||0.4;
-      const slPct=+document.getElementById('sl').value||0.35;
-      const size =+document.getElementById('size').value||100;
-      const mode = document.getElementById('mode').value;
-      const okStrict = (!t5.strong) || (t1.state && t5.state && t1.state!==t5.state);
-      const okRelax  = (t1.state && ((opp==='BUY' && t1.state==='UP') || (opp==='SELL' && t1.state==='DOWN'))) || okStrict;
-      const canEnter = (mode==='strict')? okStrict : okRelax;
-      const entry=lastPrice;
-      const tp = opp==='BUY'? entry*(1+tpPct/100) : entry*(1-tpPct/100);
-      const sl = opp==='BUY'? entry*(1-slPct/100) : entry*(1+slPct/100);
-      const qty = size/entry;
-      signals.push({anti:true, ts:now, fromBot:side, action:opp, price:entry});
-      saveSignals(signals); renderSignals(); updateSignalChart();
-      if(!canEnter) return;
-      positions.push({time:now, side:opp, entry, tp, sl, qty, status:'OPEN'});
-      renderPositions();
-    }
-    function renderPositions(){
-      const tbody=document.getElementById('posBody'); tbody.innerHTML='';
-      let openCnt=0, unreal=0;
-      for(const p of positions){
-        if(p.status==='OPEN'){ openCnt++; const pnl=(p.side==='BUY'?(lastPrice-p.entry):(p.entry-lastPrice))*p.qty; unreal+=pnl; }
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td>${new Date(p.time).toLocaleTimeString()}</td><td>${p.side}</td>
-          <td class="num">${fmt(p.entry)}</td><td class="num">${fmt(p.tp)}</td><td class="num">${fmt(p.sl)}</td>
-          <td class="num">${p.qty.toFixed(3)}</td><td class="num">${p.status==='OPEN'?((p.side==='BUY'?(lastPrice-p.entry):(p.entry-lastPrice))*p.qty).toFixed(2):'—'}</td>
-          <td>${p.status}</td>`;
-        tbody.appendChild(tr);
-      }
-      document.getElementById('openCnt').textContent=openCnt;
-      document.getElementById('pnlOpen').textContent=unreal.toFixed(2);
-      const wr=(win+loss)>0? Math.round(win*100/(win+loss)):0;
-      document.getElementById('wr').textContent=`${wr}%`;
-      document.getElementById('pnlReal').textContent=realized.toFixed(2);
-    }
-    function markClosed(p,pnl){ p.status = pnl>=0?'TP':'SL'; if(pnl>=0) win++; else loss++; realized+=pnl; }
-    function tickPositions(){
-      for(const p of positions.filter(x=>x.status==='OPEN')){
-        if(p.side==='BUY' && (lastPrice>=p.tp || lastPrice<=p.sl)){ markClosed(p, (lastPrice-p.entry)*p.qty ); }
-        else if(p.side==='SELL' && (lastPrice<=p.tp || lastPrice>=p.sl)){ markClosed(p, (p.entry-lastPrice)*p.qty ); }
-      }
-      renderPositions();
-    }
-
-    // ---------- Close prices chart (5m) ----------
-    function drawCloseChart(){
-      const labels=kl5.map(k=>new Date(k.t).toLocaleTimeString());
-      const data=kl5.map(k=>k.c);
-      const ctx=document.getElementById('closeChart').getContext('2d');
-      if(closeChart) closeChart.destroy();
-      closeChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,fill:false,borderWidth:2}]},options:{plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false}});
-    }
-
-    // ---------- Init ----------
-    async function boot(){
-      signals = loadSignals();
-      renderSignals(); updateSignalChart();
-      await updatePriceCard(); await refreshTrends(); drawCloseChart();
-      setInterval(async()=>{ await updatePriceCard(); tickPositions(); }, 4000);
-      setInterval(async()=>{ await refreshTrends(); }, 30000);
-    }
-    document.addEventListener('DOMContentLoaded', boot);
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshAll();
+      setInterval(async ()=>{
+        lastPrice = await fetchPrice();
+        document.getElementById('price').textContent = '$'+ (Math.round(lastPrice*10000)/10000).toLocaleString();
+      }, 15000);
+    });
   </script>
 </body>
 </html>
