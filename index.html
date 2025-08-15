@@ -4,7 +4,57 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signals — XRP / DOGE / PEPE</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">function computeStats(){
+  const closed = JOURNAL.trades.filter(t=>t.status==='CLOSED');
+  const wins = closed.filter(t=>t.r>0).length;
+  const losses = closed.filter(t=>t.r<=0).length;
+  const wr = closed.length ? (wins/closed.length*100).toFixed(1) : '—';
+  const avgR = closed.length ? (closed.reduce((a,b)=>a+(b.r||0),0)/closed.length).toFixed(2) : '—';
+  return { closed: closed.length, wins, losses, wr, avgR, bal: PAPER.balance.toFixed(2) };
+}
+function paintStats(){
+  const s = computeStats();
+  const el = document.getElementById('paperStats');
+  if (el){
+    el.textContent = `Closed: ${s.closed} · Win: ${s.wins} · Loss: ${s.losses} · Win-rate: ${s.wr}% · Avg R: ${s.avgR} · Balance: $${s.bal}`;
+  }
+}
+setInterval(paintStats, 1500); paintStats();
+
+const paperToggleEl = document.getElementById('paperToggle');
+if (paperToggleEl){
+  paperToggleEl.checked = PAPER.enabled;
+  paperToggleEl.addEventListener('change', e=>{
+    PAPER.enabled = !!e.target.checked; saveJournal(); paintStats();
+  });
+}
+const resetJournalEl = document.getElementById('resetJournal');
+if (resetJournalEl){
+  resetJournalEl.addEventListener('click', ()=>{
+    if (!confirm('Reset all paper-trade data?')) return;
+    PAPER.balance = PAPER.baseBalance;
+    JOURNAL.trades = []; JOURNAL.signals = []; saveJournal(); paintStats();
+  });
+}
+const exportCsvEl = document.getElementById('exportCsv');
+if (exportCsvEl){
+  exportCsvEl.addEventListener('click', ()=>{
+    const rows = [['time','symbol','side','entry','sl','tp1','tp2','qty','status','exit','r','pnl']];
+    JOURNAL.trades.forEach(t=>{
+      rows.push([
+        new Date(t.openTime).toISOString(), t.symbol, t.side, t.entry, t.sl, t.tp1, t.tp2,
+        t.qty, t.status, t.exit, t.r, t.pnl
+      ]);
+    });
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`journal-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+</script>
   <meta name="description" content="Simple spot/futures-friendly signals for XRP, DOGE, and PEPE using Binance + CoinGecko + basic TA (RSI, MA) with Telegram alerts." />
   <style>
     :root { color-scheme: dark light; }
@@ -50,6 +100,22 @@
     </section>
 
     <main id="grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></main>
+
+<section class="card mt-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="font-semibold">Verification / Paper Trading</h2>
+    <label class="text-xs inline-flex items-center gap-2">
+      <input id="paperToggle" type="checkbox" class="accent-indigo-500" checked>
+      Enable
+    </label>
+  </div>
+  <div id="paperStats" class="text-sm text-slate-600 dark:text-slate-300">—</div>
+  <div class="mt-3 flex gap-2">
+    <button id="exportCsv" class="chip">Export CSV</button>
+    <button id="resetJournal" class="chip">Reset Journal</button>
+  </div>
+</section>
+
 
     <footer class="mt-10 text-center text-xs text-slate-500 dark:text-slate-400">
       <p>Data: Binance & CoinGecko • Built for copy-paste hosting (GitHub Pages / simple static host)</p>
@@ -135,6 +201,29 @@ async function fetchCG(ids){
   return res.json();
 }
 
+// ====== PAPER MODE & JOURNAL ======
+const PAPER = {
+  enabled: true,          // toggle verifikasi (paper-trade)
+  baseBalance: 1000,      // modal uji
+  riskPct: 2,             // ≤ 2% per trade (ikuti banner)
+  balance: 1000
+};
+const JOURNAL = {
+  signals: [],            // semua sinyal (BUY/SELL/INFO)
+  trades: []              // trade virtual yang dibuka dari sinyal BUY/SELL
+};
+function saveJournal(){
+  try { localStorage.setItem('journal', JSON.stringify({ PAPER, JOURNAL })); } catch {}
+}
+function loadJournal(){
+  try{
+    const j = JSON.parse(localStorage.getItem('journal'));
+    if (j?.PAPER){ Object.assign(PAPER, j.PAPER); }
+    if (j?.JOURNAL){ Object.assign(JOURNAL, j.JOURNAL); }
+  }catch{}
+}
+loadJournal();
+
 // ====== SIGNAL LOGIC ======
 function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
   const sigs = [];
@@ -215,6 +304,64 @@ function pickPrimarySignal(sigs){
   if (!sigs || sigs.length === 0) return null;
   const priority = { SELL: 2, BUY: 1, INFO: 0 };
   return [...sigs].sort((a,b)=>priority[b.type]-priority[a.type])[0];
+}
+
+function logSignal(symObj, s){
+  JOURNAL.signals.push({
+    t: Date.now(), symbol: symObj.symbol, type: s.type, name: s.name,
+    entry: s.entry, sl: s.sl, tp1: s.tp1, tp2: s.tp2, reason: s.reason
+  });
+  saveJournal();
+}
+
+function maybeOpenPaper(symObj, s){
+  if (!PAPER.enabled) return;
+  if (!(s.type === 'BUY' || s.type === 'SELL')) return;
+  if (!s.sl || !s.entry) return;
+
+  const side = s.type === 'BUY' ? 'LONG' : 'SHORT';
+  const riskAmt = PAPER.balance * (PAPER.riskPct/100);
+  const stopDist = Math.max(1e-12, Math.abs(s.entry - s.sl));
+  const qty = riskAmt / stopDist;
+
+  JOURNAL.trades.push({
+    id: `${symObj.symbol}-${Date.now()}`,
+    symbol: symObj.symbol,
+    side, entry: s.entry, sl: s.sl, tp1: s.tp1, tp2: s.tp2,
+    qty, openTime: Date.now(), status: 'OPEN', exit: null, r: null, pnl: null
+  });
+  saveJournal();
+}
+
+function closeTrade(t, price){
+  if (t.status !== 'OPEN') return;
+  t.exit = price;
+  const risk = Math.max(1e-12, Math.abs(t.entry - t.sl));
+  let r;
+  if (t.side === 'LONG')  r = (price - t.entry) / risk;
+  else                    r = (t.entry - price) / risk;
+
+  t.r = r;
+  t.pnl = r * (PAPER.balance * (PAPER.riskPct/100));
+  t.status = 'CLOSED';
+  PAPER.balance += t.pnl;
+  saveJournal();
+}
+
+function markOpenTradesPrice(symbol, price){
+  for (const t of JOURNAL.trades){
+    if (t.symbol !== symbol || t.status !== 'OPEN') continue;
+
+    if (t.side === 'LONG'){
+      if (price <= t.sl){ closeTrade(t, price); continue; }
+      if (t.tp2 && price >= t.tp2){ closeTrade(t, t.tp2); continue; }
+      if (t.tp1 && price >= t.tp1){ closeTrade(t, t.tp1); continue; }
+    } else {
+      if (price >= t.sl){ closeTrade(t, price); continue; }
+      if (t.tp2 && price <= t.tp2){ closeTrade(t, t.tp2); continue; }
+      if (t.tp1 && price <= t.tp1){ closeTrade(t, t.tp1); continue; }
+    }
+  }
 }
 
 // ====== UI RENDER ======
@@ -313,7 +460,8 @@ async function loadSymbol(symObj){
   const ma50 = sma(closes1h, 50);
 
   const sigs = buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 });
-  state[key] = { t24, price, low, high, rsi15, rsi1h, ma20, ma50, sigs, lastAlertSig: state[key]?.lastAlertSig, lastAlertAt: state[key]?.lastAlertAt };
+  state[key] = { t24, price, low, high, rsi15, rsi1h, ma20, ma50, sigs, lastAlertSig: state[key]?.lastAlertSig, lastAlertAt: state[key]?.lastAlertA, lastLoggedSig: state[key]?.lastLoggedSig };
+
 }
 
 function paint(symObj){
@@ -338,6 +486,19 @@ function paint(symObj){
   }
 
   renderSignals(document.getElementById(`signals-${key}`), s.sigs);
+  // PAPER & LOGIC — catat sinyal dan buka trade virtual satu kali per sinyal unik
+  const primaryForPaper = pickPrimarySignal(s.sigs);
+  if (primaryForPaper){
+    const sigKeyPaper = `${primaryForPaper.type}|${primaryForPaper.name}|${primaryForPaper.sl}|${primaryForPaper.tp1}|${primaryForPaper.tp2}`;
+    if (sigKeyPaper !== s.lastLoggedSig){
+      logSignal(symObj, primaryForPaper);
+      maybeOpenPaper(symObj, primaryForPaper);
+      s.lastLoggedSig = sigKeyPaper;
+    }
+  }
+  // Update status trade virtual berdasar harga terbaru
+  markOpenTradesPrice(key, s.price);
+
 
   // Telegram alert (edge + cooldown)
   const primary = pickPrimarySignal(s.sigs);
@@ -402,6 +563,56 @@ exportBtn.addEventListener('click', ()=>{
   a.href = url; a.download = `signals-${Date.now()}.json`; a.click();
   URL.revokeObjectURL(url);
 });
+function computeStats(){
+  const closed = JOURNAL.trades.filter(t=>t.status==='CLOSED');
+  const wins = closed.filter(t=>t.r>0).length;
+  const losses = closed.filter(t=>t.r<=0).length;
+  const wr = closed.length ? (wins/closed.length*100).toFixed(1) : '—';
+  const avgR = closed.length ? (closed.reduce((a,b)=>a+(b.r||0),0)/closed.length).toFixed(2) : '—';
+  return { closed: closed.length, wins, losses, wr, avgR, bal: PAPER.balance.toFixed(2) };
+}
+function paintStats(){
+  const s = computeStats();
+  const el = document.getElementById('paperStats');
+  if (el){
+    el.textContent = `Closed: ${s.closed} · Win: ${s.wins} · Loss: ${s.losses} · Win-rate: ${s.wr}% · Avg R: ${s.avgR} · Balance: $${s.bal}`;
+  }
+}
+setInterval(paintStats, 1500); paintStats();
+
+const paperToggleEl = document.getElementById('paperToggle');
+if (paperToggleEl){
+  paperToggleEl.checked = PAPER.enabled;
+  paperToggleEl.addEventListener('change', e=>{
+    PAPER.enabled = !!e.target.checked; saveJournal(); paintStats();
+  });
+}
+const resetJournalEl = document.getElementById('resetJournal');
+if (resetJournalEl){
+  resetJournalEl.addEventListener('click', ()=>{
+    if (!confirm('Reset all paper-trade data?')) return;
+    PAPER.balance = PAPER.baseBalance;
+    JOURNAL.trades = []; JOURNAL.signals = []; saveJournal(); paintStats();
+  });
+}
+const exportCsvEl = document.getElementById('exportCsv');
+if (exportCsvEl){
+  exportCsvEl.addEventListener('click', ()=>{
+    const rows = [['time','symbol','side','entry','sl','tp1','tp2','qty','status','exit','r','pnl']];
+    JOURNAL.trades.forEach(t=>{
+      rows.push([
+        new Date(t.openTime).toISOString(), t.symbol, t.side, t.entry, t.sl, t.tp1, t.tp2,
+        t.qty, t.status, t.exit, t.r, t.pnl
+      ]);
+    });
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`journal-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 </script>
 </body>
 </html>
