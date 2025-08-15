@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signals — XRP / DOGE / PEPE</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="description" content="Simple spot/futures-friendly signals for XRP, DOGE, and PEPE using Binance + CoinGecko + basic TA (RSI, MA)." />
+  <meta name="description" content="Simple spot/futures-friendly signals for XRP, DOGE, and PEPE using Binance + CoinGecko + basic TA (RSI, MA) with Telegram alerts." />
   <style>
     :root { color-scheme: dark light; }
     .badge { @apply text-xs px-2 py-0.5 rounded-full font-semibold; }
@@ -37,7 +37,16 @@
         <span class="chip">Timeframes: 15m + 1h</span>
         <span class="chip">Signals: bounce / breakdown / breakout</span>
         <button id="exportJson" class="chip">Export JSON</button>
+        <span class="mx-2"></span>
+        <label class="inline-flex items-center gap-2 text-xs cursor-pointer select-none ml-auto">
+          <input id="tgToggle" type="checkbox" class="accent-indigo-500" checked>
+          Telegram Alerts
+        </label>
+        <button id="tgTest" class="chip">Test Telegram</button>
+        <input id="tgToken" class="chip w-56" placeholder="Bot Token" value="7929662766:AAEnL_VsaMi_iBCqRd4CZGnFBe3HST-J1jI"/>
+        <input id="tgChats" class="chip w-48" placeholder="Chat IDs (comma)" value="1392975690"/>
       </div>
+      <div class="mt-2 text-[11px] text-amber-600 dark:text-amber-400">⚠️ Token di-embed di client artinya publik bisa melihatnya (view-source). Untuk produksi, pakai serverless proxy (Cloudflare Workers/Netlify) agar token tersembunyi.</div>
     </section>
 
     <main id="grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></main>
@@ -56,17 +65,21 @@ const SYMBOLS = [
 ];
 const POLL_MS = 20000; // 20s
 
+// Telegram (client-side) — WARNING: Token visible publicly.
+let TELEGRAM = {
+  enabled: true,
+  token: '7929662766:AAEnL_VsaMi_iBCqRd4CZGnFBe3HST-J1jI',
+  chatIds: ['1392975690'],
+  cooldownSec: 600 // 10 minutes per symbol
+};
+
 // ====== HELPERS ======
 const fmt = (n, d=4) => {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
 };
 const now = () => new Date().toLocaleString();
-
-function percent(from, to){
-  if (!from || !to) return 0;
-  return ((to - from) / from) * 100;
-}
+function percent(from, to){ if (!from || !to) return 0; return ((to - from) / from) * 100; }
 
 // Simple RSI(14)
 function rsi(values, period = 14){
@@ -133,12 +146,11 @@ function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
   // Bounce Buy
   if (nearLow && rsi15 !== null && rsi15 < 35){
     sigs.push({
-      type: 'BUY',
-      name: 'Bounce @ 24h Low',
+      type: 'BUY', name: 'Bounce @ 24h Low',
       strength: (30 - rsi15) > 0 ? 'Strong' : 'Moderate',
       entry: price,
-      sl: Number((low * 0.985).toFixed(12)), // -1.5% below 24h low
-      tp1: Number((low + (high-low)*0.5).toFixed(12)), // mid-range
+      sl: Number((low * 0.985).toFixed(12)),
+      tp1: Number((low + (high-low)*0.5).toFixed(12)),
       tp2: Number((high).toFixed(12)),
       reason: `Price near 24h low & RSI15 ${rsi15.toFixed(1)} (<35)${trendUp ? ', 1H MA20>MA50' : ''}`
     });
@@ -146,8 +158,7 @@ function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
   // Breakout Buy
   if (price > high && rsi15 !== null && rsi15 > 55){
     sigs.push({
-      type: 'BUY',
-      name: 'Breakout > 24h High',
+      type: 'BUY', name: 'Breakout > 24h High',
       strength: trendUp ? 'Strong' : 'Moderate',
       entry: price,
       sl: Number((high * 0.99).toFixed(12)),
@@ -159,8 +170,7 @@ function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
   // Breakdown Sell
   if (price < low && rsi15 !== null && rsi15 < 45){
     sigs.push({
-      type: 'SELL',
-      name: 'Breakdown < 24h Low',
+      type: 'SELL', name: 'Breakdown < 24h Low',
       strength: trendDown ? 'Strong' : 'Moderate',
       entry: price,
       sl: Number((low * 1.01).toFixed(12)),
@@ -172,18 +182,39 @@ function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
   // Take-Profit zone hint
   if (nearHigh && rsi15 !== null && rsi15 > 65){
     sigs.push({
-      type: 'INFO',
-      name: 'Near 24h High',
-      strength: 'TP Area',
-      entry: price,
-      sl: null,
+      type: 'INFO', name: 'Near 24h High', strength: 'TP Area',
+      entry: price, sl: null,
       tp1: Number((high).toFixed(12)),
       tp2: Number((high * 1.01).toFixed(12)),
       reason: `Price near 24h high & RSI15 ${rsi15.toFixed(1)} (>65)`
     });
   }
-
   return sigs;
+}
+
+// --- Telegram helpers ---
+function tgEndpoint(){ return `https://api.telegram.org/bot${TELEGRAM.token}/sendMessage`; }
+async function sendTelegramMessage(text){
+  if (!TELEGRAM.enabled || !TELEGRAM.token || !TELEGRAM.chatIds?.length) return;
+  const bodyBase = `parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(text)}`;
+  const tasks = TELEGRAM.chatIds.map(cid => fetch(tgEndpoint(), {
+    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `chat_id=${encodeURIComponent(cid)}&${bodyBase}`
+  }).catch(()=>{}));
+  await Promise.all(tasks);
+}
+function formatSigText(sym, s){
+  return [
+    `<b>${sym.display}</b> — <b>${s.type}</b> · ${s.name}`,
+    `Entry: <code>${s.entry}</code> | SL: <code>${s.sl ?? '—'}</code> | TP1: <code>${s.tp1}</code> | TP2: <code>${s.tp2}</code>`,
+    `${s.reason}`,
+    `#${sym.display} #signal`
+  ].join('\n');
+}
+function pickPrimarySignal(sigs){
+  if (!sigs || sigs.length === 0) return null;
+  const priority = { SELL: 2, BUY: 1, INFO: 0 };
+  return [...sigs].sort((a,b)=>priority[b.type]-priority[a.type])[0];
 }
 
 // ====== UI RENDER ======
@@ -227,7 +258,6 @@ function cardTemplate(key, display, color){
         <div id="mcap-${key}" class="font-medium">—</div>
       </div>
     </div>
-
     <div id="signals-${key}" class="mt-4 space-y-3"></div>
   </section>`
 }
@@ -260,9 +290,7 @@ const state = {};
 async function loadCoinGecko(){
   const ids = SYMBOLS.map(s => s.coingeckoId);
   const data = await fetchCG(ids);
-  data.forEach(coin => {
-    state[`cg-${coin.id}`] = coin;
-  });
+  data.forEach(coin => { state[`cg-${coin.id}`] = coin; });
 }
 
 async function loadSymbol(symObj){
@@ -285,8 +313,7 @@ async function loadSymbol(symObj){
   const ma50 = sma(closes1h, 50);
 
   const sigs = buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 });
-
-  state[key] = { t24, price, low, high, rsi15, rsi1h, ma20, ma50, sigs };
+  state[key] = { t24, price, low, high, rsi15, rsi1h, ma20, ma50, sigs, lastAlertSig: state[key]?.lastAlertSig, lastAlertAt: state[key]?.lastAlertAt };
 }
 
 function paint(symObj){
@@ -311,13 +338,25 @@ function paint(symObj){
   }
 
   renderSignals(document.getElementById(`signals-${key}`), s.sigs);
+
+  // Telegram alert (edge + cooldown)
+  const primary = pickPrimarySignal(s.sigs);
+  if (primary){
+    const sigKey = `${primary.type}|${primary.name}|${primary.sl}|${primary.tp1}|${primary.tp2}`;
+    const nowSec = Math.floor(Date.now()/1000);
+    const lastKey = s.lastAlertSig;
+    const lastAt = s.lastAlertAt || 0;
+    const cooled = (nowSec - lastAt) >= (TELEGRAM.cooldownSec || 0);
+    if (sigKey !== lastKey && cooled){
+      sendTelegramMessage(formatSigText(symObj, primary));
+      s.lastAlertSig = sigKey;
+      s.lastAlertAt = nowSec;
+    }
+  }
 }
 
 async function refreshAll(){
-  try{
-    await loadCoinGecko();
-  }catch(e){ console.warn('CG error', e); }
-
+  try{ await loadCoinGecko(); }catch(e){ console.warn('CG error', e); }
   await Promise.all(SYMBOLS.map(loadSymbol));
   SYMBOLS.forEach(paint);
   document.getElementById('lastUpdated').textContent = now();
@@ -328,20 +367,30 @@ const grid = document.getElementById('grid');
 SYMBOLS.forEach(s => grid.insertAdjacentHTML('beforeend', cardTemplate(s.symbol, s.display, s.color)));
 
 let timer = null;
-function startAuto(){
-  if (timer) clearInterval(timer);
-  timer = setInterval(refreshAll, POLL_MS);
-}
-
+function startAuto(){ if (timer) clearInterval(timer); timer = setInterval(refreshAll, POLL_MS); }
 refreshAll().then(startAuto);
 
 // Controls
 const autoChk = document.getElementById('autoRefresh');
 const refreshBtn = document.getElementById('refreshBtn');
 refreshBtn.addEventListener('click', refreshAll);
-autoChk.addEventListener('change', (e)=>{
-  if (e.target.checked) startAuto(); else { if (timer) clearInterval(timer); }
-});
+autoChk.addEventListener('change', (e)=>{ if (e.target.checked) startAuto(); else { if (timer) clearInterval(timer); } });
+
+// Telegram controls
+const tgToggle = document.getElementById('tgToggle');
+const tgToken = document.getElementById('tgToken');
+const tgChats = document.getElementById('tgChats');
+const tgTest = document.getElementById('tgTest');
+
+tgToggle.checked = TELEGRAM.enabled;
+tgToken.value = TELEGRAM.token || '';
+tgChats.value = (TELEGRAM.chatIds||[]).join(',');
+
+tgToggle.addEventListener('change', e => { TELEGRAM.enabled = !!e.target.checked; });
+tgToken.addEventListener('input', e => { TELEGRAM.token = e.target.value.trim(); });
+tgChats.addEventListener('input', e => { TELEGRAM.chatIds = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); });
+
+tgTest.addEventListener('click', ()=>{ sendTelegramMessage('<b>Test</b> — Alerts aktif ✅'); });
 
 // Export JSON
 const exportBtn = document.getElementById('exportJson');
