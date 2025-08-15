@@ -1,347 +1,357 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XRP Signals + Auto Recommendation (LIVE)</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signals — XRP / DOGE / PEPE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Simple spot/futures-friendly signals for XRP, DOGE, and PEPE using Binance + CoinGecko + basic TA (RSI, MA)." />
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#f8fafc;color:#0f172a}
-    .wrap{max-width:1200px;margin:0 auto;padding:16px}
-    h1{text-align:center;margin:8px 0 14px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .card{background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:16px}
-    .card h2{font-size:1.05rem;margin-bottom:10px;border-bottom:3px solid #0ea5e9;display:inline-block;padding-bottom:4px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:600}
-    .ok{background:#dcfce7;color:#14532d}
-    .bad{background:#fee2e2;color:#7f1d1d}
-    .mono{font-family:ui-monospace,Menlo,monospace;background:#f8fafc;border-radius:10px;padding:10px}
-    .input,.select{padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px}
-    .btn{background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
-    .chartbox{position:relative;height:220px}
-    .gauge{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .gauge>div{height:100%;background:linear-gradient(90deg,#22c55e,#ef4444);width:50%}
-    .reco{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-top:6px}
-    .action{font-size:1.8rem;font-weight:900}
-    .BUY{color:#16a34a}.SELL{color:#ef4444}.HOLD{color:#ca8a04}
-    .bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .bar>div{height:100%}
-    .bar.buy{background:linear-gradient(90deg,#e5f9ed,#f0fdf4)} .bar.buy>div{background:#22c55e}
-    .bar.sell{background:linear-gradient(90deg,#fee2e2,#fff1f2)} .bar.sell>div{background:#ef4444}
-    .bar.hold{background:linear-gradient(90deg,#fef9c3,#fffbeb)} .bar.hold>div{background:#eab308}
-    small.muted{color:#64748b}
+    :root { color-scheme: dark light; }
+    .badge { @apply text-xs px-2 py-0.5 rounded-full font-semibold; }
+    .chip { @apply text-[11px] px-2 py-1 rounded-full border; }
+    .card { @apply rounded-2xl shadow-lg p-5 bg-white/70 dark:bg-slate-900/70 backdrop-blur border border-slate-200/40 dark:border-slate-800; }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <h1>🔎 XRP Signals + Auto Recommendation (LIVE)</h1>
-
-    <div class="grid">
-      <div class="card">
-        <h2>Live & Order Book</h2>
-        <div class="row">
-          <div>Price: <b id="price">$0.0000</b> <small id="priceSource" class="muted">Source: —</small></div>
-          <div>OBI: <b id="obiVal">—</b> <small id="obiSide" class="pill">—</small></div>
-        </div>
-        <div class="gauge" style="margin:6px 0 8px"><div id="obiGauge" style="width:50%"></div></div>
-        <div class="row">
-          <label>Depth <input id="depth" class="input" type="number" value="10" min="5" max="50" step="5" style="width:90px"/></label>
-          <button class="btn" id="btnRefreshOB">🔄 Refresh OB</button>
-        </div>
-        <div class="row" style="gap:18px;margin-top:8px">
-          <div>Bids(sum): <b id="sumBids">—</b></div>
-          <div>Asks(sum): <b id="sumAsks">—</b></div>
-        </div>
+<body class="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-950 dark:to-slate-900 text-slate-900 dark:text-slate-100">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <header class="flex items-center justify-between gap-3 mb-6">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Crypto Signals — <span class="text-indigo-500">XRP</span> / <span class="text-teal-500">DOGE</span> / <span class="text-lime-500">PEPE</span></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Live prices from Binance + market caps from CoinGecko. TA: RSI (14), MA20/MA50 on 1H. Auto-refresh ~20s.</p>
       </div>
-
-      <div class="card">
-        <h2>Futures Funding & OI</h2>
-        <div class="row" style="gap:18px">
-          <div>Funding Rate: <span id="funding" class="pill">—</span></div>
-          <div>Open Interest: <b id="oi">—</b> XRP</div>
-        </div>
-        <div class="row" style="gap:8px;margin-top:8px">
-          <small class="muted">*Snapshot Binance Futures. Auto refresh 60s.</small>
-        </div>
+      <div class="flex items-center gap-2">
+        <button id="refreshBtn" class="chip">Refresh</button>
+        <span id="lastUpdated" class="chip">—</span>
+        <label class="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
+          <input id="autoRefresh" type="checkbox" class="accent-indigo-500" checked>
+          Auto
+        </label>
       </div>
-    </div>
+    </header>
 
-    <div class="grid" style="margin-top:14px">
-      <div class="card">
-        <h2>TF-5m — Close & VWAP</h2>
-        <div class="chartbox"><canvas id="chart5m"></canvas></div>
-        <div class="row" style="gap:16px;margin-top:8px">
-          <div>VWAP: <b id="vwap">—</b></div>
-          <div>Dist to VWAP: <b id="distVWAP">—</b></div>
-          <div>Volume Spike (1m vs 20m avg): <span id="volSpike" class="pill">—</span></div>
-        </div>
+    <!-- Settings -->
+    <section class="card mb-6">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="chip">Risk per trade ≤ 2%</span>
+        <span class="chip">Timeframes: 15m + 1h</span>
+        <span class="chip">Signals: bounce / breakdown / breakout</span>
+        <button id="exportJson" class="chip">Export JSON</button>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Signals + Auto Recommendation</h2>
-        <div class="row" style="gap:10px;margin-bottom:8px">
-          <button class="btn" id="btnScan">🔍 Scan & Recommend</button>
-          <select id="sens" class="select">
-            <option value="normal" selected>Sensitivity: Normal</option>
-            <option value="high">High (agresif)</option>
-            <option value="low">Low (konservatif)</option>
-          </select>
-          <select id="mode" class="select">
-            <option value="mean" selected>Mode: Mean Reversion</option>
-            <option value="breakout">Mode: Breakout</option>
-          </select>
-          <label><input type="checkbox" id="auto" checked/> Auto scan 30s</label>
-        </div>
+    <main id="grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></main>
 
-        <div class="reco">
-          <div class="action" id="recoAction">—</div>
-          <div>
-            <div class="bar" id="recoBar"><div style="width:0%"></div></div>
-            <div style="margin-top:6px"><b id="recoStrength">0%</b> <span id="recoLabel" class="pill">—</span></div>
-            <div style="margin-top:6px"><small class="muted">Weights: OBI 30%, VWAP 35%, Volume 25%, Funding/OI 10%</small></div>
-          </div>
-        </div>
-
-        <div style="margin:8px 0"><b>Reasons</b></div>
-        <ul id="recoReasons"><li>—</li></ul>
-
-        <div style="margin-top:10px"><b>Raw Signals</b></div>
-        <div id="signals" class="mono" style="max-height:220px;overflow:auto">[]</div>
-      </div>
-    </div>
+    <footer class="mt-10 text-center text-xs text-slate-500 dark:text-slate-400">
+      <p>Data: Binance & CoinGecko • Built for copy-paste hosting (GitHub Pages / simple static host)</p>
+    </footer>
   </div>
 
 <script>
-let lastPrice=3.0, priceSource='—';
-let kl1=[], kl5=[], chart5=null;
-let signalFeed=[];
-let lastOBI={obi:50, side:'—', bids:0, asks:0};
-let lastFunding={rate:0}, lastOI=0;
+// ====== CONFIG ======
+const SYMBOLS = [
+  { symbol: 'XRPUSDT', display: 'XRP', coingeckoId: 'ripple', color: 'indigo' },
+  { symbol: 'DOGEUSDT', display: 'DOGE', coingeckoId: 'dogecoin', color: 'teal' },
+  { symbol: 'PEPEUSDT', display: 'PEPE', coingeckoId: 'pepe', color: 'lime' },
+];
+const POLL_MS = 20000; // 20s
 
-function addSignal(type, side, strength, details){
-  signalFeed.push({ts:new Date().toISOString(), type, side, strength, details});
+// ====== HELPERS ======
+const fmt = (n, d=4) => {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+};
+const now = () => new Date().toLocaleString();
+
+function percent(from, to){
+  if (!from || !to) return 0;
+  return ((to - from) / from) * 100;
 }
-function renderSignals(){ document.getElementById('signals').textContent = JSON.stringify(signalFeed.slice(-60), null, 2); }
 
-// Live price
-async function fetchLivePrice(){
+// Simple RSI(14)
+function rsi(values, period = 14){
+  if (!values || values.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++){
+    const diff = values[i] - values[i-1];
+    if (diff >= 0) gains += diff; else losses -= diff;
+  }
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+  for (let i = period + 1; i < values.length; i++){
+    const diff = values[i] - values[i-1];
+    avgGain = (avgGain * (period - 1) + Math.max(diff, 0)) / period;
+    avgLoss = (avgLoss * (period - 1) + Math.max(-diff, 0)) / period;
+  }
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function sma(values, period){
+  if (!values || values.length < period) return null;
+  const slice = values.slice(-period);
+  const sum = slice.reduce((a,b)=>a + b, 0);
+  return sum / period;
+}
+
+// ====== API ======
+const BINANCE = 'https://api.binance.com';
+async function fetch24h(symbol){
+  const url = `${BINANCE}/api/v3/ticker/24hr?symbol=${symbol}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('24hr fetch failed');
+  return res.json();
+}
+async function fetchPrice(symbol){
+  const url = `${BINANCE}/api/v3/ticker/price?symbol=${symbol}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('price fetch failed');
+  return res.json();
+}
+async function fetchKlines(symbol, interval='15m', limit=120){
+  const url = `${BINANCE}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('klines fetch failed');
+  return res.json();
+}
+async function fetchCG(ids){
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&order=market_cap_desc&per_page=3&page=1&sparkline=false&price_change_percentage=24h`;
+  const res = await fetch(url, { headers: { 'accept': 'application/json' } });
+  if (!res.ok) throw new Error('coingecko fetch failed');
+  return res.json();
+}
+
+// ====== SIGNAL LOGIC ======
+function buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 }){
+  const sigs = [];
+  const nearLow = price <= low * 1.005; // within 0.5% of 24h low
+  const nearHigh = price >= high * 0.995; // within 0.5% of 24h high
+  const trendUp = ma20 && ma50 ? ma20 > ma50 : false;
+  const trendDown = ma20 && ma50 ? ma20 < ma50 : false;
+
+  // Bounce Buy
+  if (nearLow && rsi15 !== null && rsi15 < 35){
+    sigs.push({
+      type: 'BUY',
+      name: 'Bounce @ 24h Low',
+      strength: (30 - rsi15) > 0 ? 'Strong' : 'Moderate',
+      entry: price,
+      sl: Number((low * 0.985).toFixed(12)), // -1.5% below 24h low
+      tp1: Number((low + (high-low)*0.5).toFixed(12)), // mid-range
+      tp2: Number((high).toFixed(12)),
+      reason: `Price near 24h low & RSI15 ${rsi15.toFixed(1)} (<35)${trendUp ? ', 1H MA20>MA50' : ''}`
+    });
+  }
+  // Breakout Buy
+  if (price > high && rsi15 !== null && rsi15 > 55){
+    sigs.push({
+      type: 'BUY',
+      name: 'Breakout > 24h High',
+      strength: trendUp ? 'Strong' : 'Moderate',
+      entry: price,
+      sl: Number((high * 0.99).toFixed(12)),
+      tp1: Number((high * 1.015).toFixed(12)),
+      tp2: Number((high * 1.03).toFixed(12)),
+      reason: `Breakout above 24h high & RSI15 ${rsi15.toFixed(1)} (>55)`
+    });
+  }
+  // Breakdown Sell
+  if (price < low && rsi15 !== null && rsi15 < 45){
+    sigs.push({
+      type: 'SELL',
+      name: 'Breakdown < 24h Low',
+      strength: trendDown ? 'Strong' : 'Moderate',
+      entry: price,
+      sl: Number((low * 1.01).toFixed(12)),
+      tp1: Number((low * 0.985).toFixed(12)),
+      tp2: Number((low * 0.97).toFixed(12)),
+      reason: `Lost 24h low & RSI15 ${rsi15.toFixed(1)} (<45)`
+    });
+  }
+  // Take-Profit zone hint
+  if (nearHigh && rsi15 !== null && rsi15 > 65){
+    sigs.push({
+      type: 'INFO',
+      name: 'Near 24h High',
+      strength: 'TP Area',
+      entry: price,
+      sl: null,
+      tp1: Number((high).toFixed(12)),
+      tp2: Number((high * 1.01).toFixed(12)),
+      reason: `Price near 24h high & RSI15 ${rsi15.toFixed(1)} (>65)`
+    });
+  }
+
+  return sigs;
+}
+
+// ====== UI RENDER ======
+function cardTemplate(key, display, color){
+  return `
+  <section id="card-${key}" class="card">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <div class="badge bg-${color}-500/15 text-${color}-600 dark:text-${color}-400 border border-${color}-500/20">${display}</div>
+        <span id="price-${key}" class="text-lg font-semibold">—</span>
+      </div>
+      <div class="text-xs text-slate-500" id="pct-${key}">—</div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-sm">
+      <div>
+        <div class="text-slate-500">24h Low</div>
+        <div id="low-${key}" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-slate-500">24h High</div>
+        <div id="high-${key}" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-slate-500">RSI 15m</div>
+        <div id="rsi15-${key}" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-slate-500">RSI 1h</div>
+        <div id="rsi1h-${key}" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-slate-500">1H MA20</div>
+        <div id="ma20-${key}" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-slate-500">1H MA50</div>
+        <div id="ma50-${key}" class="font-medium">—</div>
+      </div>
+      <div class="col-span-2">
+        <div class="text-slate-500">Market Cap (CG)</div>
+        <div id="mcap-${key}" class="font-medium">—</div>
+      </div>
+    </div>
+
+    <div id="signals-${key}" class="mt-4 space-y-3"></div>
+  </section>`
+}
+
+function renderSignals(el, sigs){
+  if (!sigs || sigs.length === 0){
+    el.innerHTML = `<div class="text-xs text-slate-500">No immediate setups. Wait for levels.</div>`;
+    return;
+  }
+  el.innerHTML = sigs.map(s => `
+    <div class="border rounded-xl p-3 ${s.type==='BUY' ? 'border-emerald-500/40 bg-emerald-500/5' : s.type==='SELL' ? 'border-rose-500/40 bg-rose-500/5' : 'border-amber-500/40 bg-amber-500/5'}">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold">${s.type} · ${s.name}</div>
+        <div class="badge ${s.type==='BUY' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : s.type==='SELL' ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'}">${s.strength}</div>
+      </div>
+      <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+        <div><span class="text-slate-500">Entry</span><div class="font-mono">${fmt(s.entry, 12)}</div></div>
+        <div><span class="text-slate-500">SL</span><div class="font-mono">${s.sl ? fmt(s.sl, 12) : '—'}</div></div>
+        <div><span class="text-slate-500">TP1</span><div class="font-mono">${fmt(s.tp1, 12)}</div></div>
+        <div><span class="text-slate-500">TP2</span><div class="font-mono">${fmt(s.tp2, 12)}</div></div>
+      </div>
+      <div class="mt-2 text-[11px] text-slate-500">${s.reason}</div>
+    </div>
+  `).join('');
+}
+
+// ====== STATE ======
+const state = {};
+
+async function loadCoinGecko(){
+  const ids = SYMBOLS.map(s => s.coingeckoId);
+  const data = await fetchCG(ids);
+  data.forEach(coin => {
+    state[`cg-${coin.id}`] = coin;
+  });
+}
+
+async function loadSymbol(symObj){
+  const key = symObj.symbol;
+  const [t24, priceObj, k15, k1h] = await Promise.all([
+    fetch24h(key),
+    fetchPrice(key),
+    fetchKlines(key, '15m', 200),
+    fetchKlines(key, '1h', 200)
+  ]);
+
+  const price = Number(priceObj.price);
+  const low = Number(t24.lowPrice);
+  const high = Number(t24.highPrice);
+  const closes15 = k15.map(k=>Number(k[4]));
+  const closes1h = k1h.map(k=>Number(k[4]));
+  const rsi15 = rsi(closes15, 14);
+  const rsi1h = rsi(closes1h, 14);
+  const ma20 = sma(closes1h, 20);
+  const ma50 = sma(closes1h, 50);
+
+  const sigs = buildSignals({ price, low, high, rsi15, rsi1h, ma20, ma50 });
+
+  state[key] = { t24, price, low, high, rsi15, rsi1h, ma20, ma50, sigs };
+}
+
+function paint(symObj){
+  const key = symObj.symbol;
+  const id = symObj.coingeckoId;
+  const s = state[key];
+  const cg = state[`cg-${id}`];
+  if (!s) return;
+
+  document.getElementById(`price-${key}`).textContent = `$${fmt(s.price, 12)}`;
+  document.getElementById(`low-${key}`).textContent = `$${fmt(s.low, 12)}`;
+  document.getElementById(`high-${key}`).textContent = `$${fmt(s.high, 12)}`;
+  document.getElementById(`rsi15-${key}`).textContent = s.rsi15 ? s.rsi15.toFixed(1) : '—';
+  document.getElementById(`rsi1h-${key}`).textContent = s.rsi1h ? s.rsi1h.toFixed(1) : '—';
+  document.getElementById(`ma20-${key}`).textContent = s.ma20 ? `$${fmt(s.ma20, 12)}` : '—';
+  document.getElementById(`ma50-${key}`).textContent = s.ma50 ? `$${fmt(s.ma50, 12)}` : '—';
+  const pct = percent(s.low, s.price);
+  document.getElementById(`pct-${key}`).textContent = `from 24h Low: ${pct.toFixed(2)}%`;
+  if (cg){
+    const mcap = cg.market_cap ? `$${cg.market_cap.toLocaleString()}` : '—';
+    document.getElementById(`mcap-${key}`).textContent = `${mcap} • 24h Vol: $${(cg.total_volume||0).toLocaleString()}`;
+  }
+
+  renderSignals(document.getElementById(`signals-${key}`), s.sigs);
+}
+
+async function refreshAll(){
   try{
-    const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=XRPUSDT",{cache:"no-store"});
-    if(!r.ok) throw new Error("binance");
-    const j = await r.json();
-    return { price: parseFloat(j.price), source:"Binance" };
-  }catch(e){
-    try{
-      const r2 = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",{cache:"no-store"});
-      if(!r2.ok) throw new Error("cg");
-      const j2=await r2.json();
-      return { price: parseFloat(j2?.ripple?.usd), source:"CoinGecko" };
-    }catch(e2){
-      return { price: lastPrice||3.0, source:"Fallback" };
-    }
-  }
-}
-async function updatePriceUI(){
-  const res = await fetchLivePrice();
-  lastPrice=res.price; priceSource=res.source;
-  document.getElementById('price').textContent = '$'+(Math.round(lastPrice*10000)/10000).toLocaleString();
-  document.getElementById('priceSource').textContent = 'Source: '+priceSource;
+    await loadCoinGecko();
+  }catch(e){ console.warn('CG error', e); }
+
+  await Promise.all(SYMBOLS.map(loadSymbol));
+  SYMBOLS.forEach(paint);
+  document.getElementById('lastUpdated').textContent = now();
 }
 
-// Klines
-async function fetchKlines(symbol, interval, limit){
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  const r = await fetch(url,{cache:'no-store'}); const j = await r.json();
-  return j.map(x=>({t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
-}
-function computeVWAP(kl){
-  let pv=0, vol=0, vwapArr=[];
-  for(const k of kl){
-    const tp=(k.h+k.l+k.c)/3; pv += tp*k.v; vol += k.v;
-    vwapArr.push(vol>0 ? pv/vol : null);
-  }
-  return vwapArr;
-}
-function draw5m(){
-  const ctx=document.getElementById('chart5m').getContext('2d');
-  const labels=kl5.map(k=>new Date(k.t).toLocaleTimeString());
-  const close=kl5.map(k=>k.c);
-  const vwap=computeVWAP(kl5);
-  const v=vwap[vwap.length-1];
-  document.getElementById('vwap').textContent = v ? v.toFixed(4) : '—';
-  const dist = v ? ((lastPrice-v)/v*100) : 0;
-  document.getElementById('distVWAP').textContent = v ? (dist>0?'+':'')+dist.toFixed(2)+'%' : '—';
-  if(chart5) chart5.destroy();
-  chart5=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Close',data:close,fill:false,borderWidth:2},{label:'VWAP',data:vwap,fill:false,borderWidth:2}]},options:{plugins:{legend:{position:'bottom'}},responsive:true,maintainAspectRatio:false}});
-  return {vwapLast:v, distPct:dist};
+// ====== INIT ======
+const grid = document.getElementById('grid');
+SYMBOLS.forEach(s => grid.insertAdjacentHTML('beforeend', cardTemplate(s.symbol, s.display, s.color)));
+
+let timer = null;
+function startAuto(){
+  if (timer) clearInterval(timer);
+  timer = setInterval(refreshAll, POLL_MS);
 }
 
-// Volume spike
-function volumeSpike(){
-  if(kl1.length<25) return {spike:false, ratio:1, dir:'—'};
-  const last=kl1[kl1.length-1]; const prev=kl1.slice(-21,-1).map(k=>k.v);
-  const avg = prev.reduce((a,b)=>a+b,0)/prev.length;
-  const ratio = avg>0 ? last.v/avg : 1;
-  const spike = ratio>=1.5;
-  const dir = last.c>last.o?'UP':'DOWN';
-  const el=document.getElementById('volSpike');
-  el.textContent = spike ? `Spike ${ratio.toFixed(2)}x` : '—';
-  el.className = 'pill ' + (spike?'ok':'');
-  return {spike, ratio, dir};
-}
+refreshAll().then(startAuto);
 
-// Order Book Imbalance
-async function refreshOrderBook(){
-  const depth=Math.max(5, Math.min(50, parseInt(document.getElementById('depth').value)||10));
-  const url=`https://api.binance.com/api/v3/depth?symbol=XRPUSDT&limit=${depth}`;
-  try{
-    const r = await fetch(url,{cache:'no-store'}); const j = await r.json();
-    const sum=(arr)=>arr.reduce((a,[p,q])=>a+parseFloat(q),0);
-    const bids=sum(j.bids||[]), asks=sum(j.asks||[]);
-    const total=bids+asks; const obi = total>0? (bids/total*100):50;
-    document.getElementById('sumBids').textContent=bids.toFixed(0);
-    document.getElementById('sumAsks').textContent=asks.toFixed(0);
-    document.getElementById('obiVal').textContent=obi.toFixed(1)+'% bids';
-    const pill=document.getElementById('obiSide');
-    pill.textContent = obi>55 ? 'BUY-Bias' : obi<45 ? 'SELL-Bias' : 'Balanced';
-    pill.className='pill '+(obi>55?'ok':obi<45?'bad':'');
-    document.getElementById('obiGauge').style.width=Math.max(5,Math.min(95,Math.round(obi)))+'%';
-    lastOBI={obi, side: obi>=50?'UP':'DOWN', bids, asks};
-    return lastOBI;
-  }catch(e){
-    document.getElementById('obiVal').textContent='—';
-    return lastOBI;
-  }
-}
+// Controls
+const autoChk = document.getElementById('autoRefresh');
+const refreshBtn = document.getElementById('refreshBtn');
+refreshBtn.addEventListener('click', refreshAll);
+autoChk.addEventListener('change', (e)=>{
+  if (e.target.checked) startAuto(); else { if (timer) clearInterval(timer); }
+});
 
-// Funding & OI
-async function refreshFundingOI(){
-  try{
-    const fr=await fetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=XRPUSDT&limit=1',{cache:'no-store'});
-    const jf=await fr.json(); const rate = jf && jf[0] ? parseFloat(jf[0].fundingRate) : 0;
-    document.getElementById('funding').textContent=(rate*100).toFixed(4)+'%';
-    document.getElementById('funding').className='pill '+(rate>0?'ok':'bad');
-    lastFunding={rate};
-  }catch(e){/*ignore*/}
-  try{
-    const oi=await fetch('https://fapi.binance.com/fapi/v1/openInterest?symbol=XRPUSDT',{cache:'no-store'});
-    const jo=await oi.json(); const val = jo && jo.openInterest ? parseFloat(jo.openInterest) : 0;
-    document.getElementById('oi').textContent = val.toLocaleString(undefined,{maximumFractionDigits:0});
-    lastOI=val;
-  }catch(e){/*ignore*/}
-}
-
-// Aggregation
-function aggregateRecommendation(sens, mode){
-  const vwapArr=computeVWAP(kl5); const v=vwapArr[vwapArr.length-1];
-  const distPct = v ? ((lastPrice-v)/v*100) : 0;
-  const wOBI=0.30, wVWAP=0.35, wVol=0.25, wFund=0.10;
-  let scoreUP=0, scoreDOWN=0; const reasons=[];
-
-  // OBI
-  if(lastOBI && lastOBI.side!=='—'){
-    const strength = Math.min(Math.abs(lastOBI.obi-50)/50,1);
-    const s=strength*wOBI;
-    if(lastOBI.side==='UP') scoreUP+=s; else scoreDOWN+=s;
-    reasons.push(`OBI ${lastOBI.obi.toFixed(1)}% bids → ${lastOBI.side==='UP'?'UP':'DOWN'} (+${Math.round(s*100)}%)`);
-  }
-
-  // VWAP: mean vs breakout
-  const th = sens==='high'? 0.2 : sens==='low'? 0.4 : 0.3;
-  if(v){
-    let side='DOWN'; // default: price above vwap -> DOWN (mean reversion)
-    if(distPct<0) side='UP';
-    if(mode==='breakout'){ side = distPct>=0 ? 'UP' : 'DOWN'; } // above -> UP (continue), below -> DOWN
-    const norm = Math.min(Math.abs(distPct)/th,1);
-    const s=norm*wVWAP;
-    if(side==='UP') scoreUP+=s; else scoreDOWN+=s;
-    reasons.push(`VWAP ${distPct>0?'+':''}${distPct.toFixed(2)}% (${mode}) → ${side} (+${Math.round(s*100)}%)`);
-  }
-
-  // Volume
-  const vs=volumeSpike();
-  if(vs.spike){
-    let side = vs.dir;
-    if(mode==='mean'){
-      if(v){
-        if(distPct<0 && vs.dir==='UP') side='UP';
-        else if(distPct>0 && vs.dir==='DOWN') side='DOWN';
-      }
-    }
-    const cap = sens==='high'? 2.0 : sens==='low'? 3.0 : 2.5;
-    const strength = Math.min((vs.ratio-1)/(cap-1),1);
-    const s=strength*wVol;
-    if(side==='UP') scoreUP+=s; else if(side==='DOWN') scoreDOWN+=s;
-    reasons.push(`Volume spike ${vs.ratio.toFixed(2)}x (dir ${side}) (+${Math.round(s*100)}%)`);
-  }
-
-  // Funding
-  if(typeof lastFunding.rate==='number'){
-    const ratePct=lastFunding.rate*100;
-    const norm = Math.min(Math.abs(ratePct)/(sens==='high'?0.02: sens==='low'?0.06:0.04),1);
-    const s=norm*wFund;
-    const side = ratePct>=0 ? 'UP' : 'DOWN';
-    if(side==='UP') scoreUP+=s; else scoreDOWN+=s;
-    reasons.push(`Funding ${ratePct.toFixed(4)}% → ${side} (+${Math.round(s*100)}%)`);
-  }
-
-  const totalWeight=wOBI+wVWAP+wVol+wFund;
-  const maxScore = Math.max(scoreUP, scoreDOWN);
-  const pct = Math.round((maxScore/totalWeight)*100);
-  let action='HOLD'; if(pct>=40){ action = scoreUP>scoreDOWN ? 'BUY' : 'SELL'; }
-  let label='Weak'; if(pct>=70) label='Strong'; else if(pct>=40) label='Medium';
-  return {action,pct,label,reasons};
-}
-
-// Scan workflow
-async function scanAndRender(){
-  await updatePriceUI();
-  kl1 = await fetchKlines('XRPUSDT','1m',120);
-  kl5 = await fetchKlines('XRPUSDT','5m',120);
-  draw5m();
-  await refreshOrderBook();
-  await refreshFundingOI();
-  const sens=document.getElementById('sens').value;
-  const mode=document.getElementById('mode').value;
-
-  // Rebuild raw signals for transparency
-  signalFeed=[];
-  if(lastOBI.obi>=65) addSignal('OrderBookImbalance','UP','strong',`OBI=${lastOBI.obi.toFixed(1)}% bids`);
-  else if(lastOBI.obi<=35) addSignal('OrderBookImbalance','DOWN','strong',`OBI=${(100-lastOBI.obi).toFixed(1)}% asks`);
-  const vs=volumeSpike();
-  if(vs.spike) addSignal('VolumeSpike', vs.dir, vs.ratio>2?'strong':'medium', `${vs.ratio.toFixed(2)}x avg`);
-  const vwap=computeVWAP(kl5); const v=vwap[vwap.length-1];
-  if(v){
-    const dist=(lastPrice-v)/v*100;
-    const th = sens==='high'?0.15: sens==='low'?0.35:0.25;
-    if(Math.abs(dist)>=th) addSignal('VWAP-Distance', dist>0?'UP':'DOWN', Math.abs(dist)>=th*2?'strong':'medium', `${dist>0?'+':''}${dist.toFixed(2)}%`);
-  }
-  renderSignals();
-
-  const reco = aggregateRecommendation(sens, mode);
-  // UI
-  const actEl=document.getElementById('recoAction');
-  actEl.textContent=reco.action; actEl.className='action '+reco.action;
-  const bar=document.getElementById('recoBar'); bar.className='bar '+(reco.action==='BUY'?'buy':reco.action==='SELL'?'sell':'hold');
-  bar.firstElementChild.style.width=reco.pct+'%';
-  document.getElementById('recoStrength').textContent=reco.pct+'%';
-  const lab=document.getElementById('recoLabel'); lab.textContent=reco.label; lab.className='pill '+(reco.label==='Strong'?(reco.action==='BUY'?'ok':'bad'):'');
-  const ul=document.getElementById('recoReasons'); ul.innerHTML=''; reco.reasons.forEach(r=>{ const li=document.createElement('li'); li.textContent=r; ul.appendChild(li); });
-}
-
-// Boot
-document.addEventListener('DOMContentLoaded', async ()=>{
-  await scanAndRender();
-  document.getElementById('btnScan').onclick=scanAndRender;
-  document.getElementById('btnRefreshOB').onclick=refreshOrderBook;
-  // Auto loops
-  setInterval(updatePriceUI, 15000);
-  setInterval(refreshOrderBook, 15000);
-  setInterval(refreshFundingOI, 60000);
-  setInterval(async ()=>{ if(document.getElementById('auto').checked){ await scanAndRender(); } }, 30000);
+// Export JSON
+const exportBtn = document.getElementById('exportJson');
+exportBtn.addEventListener('click', ()=>{
+  const out = SYMBOLS.map(s => ({ symbol: s.symbol, ...(state[s.symbol]||{}) }));
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `signals-${Date.now()}.json`; a.click();
+  URL.revokeObjectURL(url);
 });
 </script>
 </body>
