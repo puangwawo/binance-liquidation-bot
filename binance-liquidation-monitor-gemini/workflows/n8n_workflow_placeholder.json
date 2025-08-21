@@ -1,0 +1,23 @@
+{
+  "name": "liquidation-gemini-placeholder",
+  "nodes": [
+    {
+      "type": "webhook",
+      "name": "Webhook Trigger",
+      "path": "liquidation-webhook"
+    },
+    {
+      "type": "http-request",
+      "name": "Get Market Data"
+    },
+    {
+      "type": "code",
+      "name": "Gemini Analysis"
+    },
+    {
+      "type": "telegram",
+      "name": "Send Telegram"
+    }
+  ],
+  "note": "Ganti file ini dengan workflow n8n Anda yang asli."
+}

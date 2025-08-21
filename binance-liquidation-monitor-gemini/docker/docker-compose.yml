@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  liquidation-monitor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.monitor
+    ports:
+      - "8080:8080"
+    environment:
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/liquidation-webhook
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID_1=${TELEGRAM_CHAT_ID_1}
+      - TELEGRAM_CHAT_ID_2=${TELEGRAM_CHAT_ID_2}
+      - BINANCE_SYMBOLS=${BINANCE_SYMBOLS}
+    depends_on:
+      - n8n
+
+volumes:
+  n8n_data:
