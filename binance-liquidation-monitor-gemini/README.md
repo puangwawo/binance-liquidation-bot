@@ -16,7 +16,7 @@ dengan **analisis AI (Gemini)**, **n8n workflow**, **Telegram notifications**, s
   - 06_binance_liquidation_api_info.md — info stream `@forceOrder`
 - `workflows/` — placeholder workflow **n8n** (silakan ganti dengan file asli Anda)
 - `docker/` — `docker-compose.yml` + `Dockerfile.monitor` + contoh `.env.example`
-- `scripts/` — **monitor_placeholder.py** agar stack Docker bisa *run/health-check* sambil menunggu kode monitor final
+- `scripts/` — **monitor_placeholder.py** agar stack Docker bisa *run/health-check* sambil menunggu kode monitor final, serta contoh bot **ma_rsi_trading_bot.py** yang menggunakan indikator MA dan RSI untuk trading otomatis
 - `backend/`, `frontend/` — placeholder README untuk struktur ke depan
 
 ## 🚀 Quick Start (Docker, untuk demonstrasi layanan & health endpoint)
